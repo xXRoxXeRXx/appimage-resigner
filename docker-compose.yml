@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  appimage-resigner:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
+      - ./signed:/app/signed
+      - ./temp_keys:/app/temp_keys
+    environment:
+      - PYTHONUNBUFFERED=1
+    restart: unless-stopped

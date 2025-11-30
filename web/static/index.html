@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AppImage Re-Signer - Web Interface</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔐 AppImage Re-Signer</h1>
+            <p class="subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Upload AppImage -->
+            <section class="card" id="step1">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <h2>AppImage hochladen</h2>
+                </div>
+                
+                <div class="upload-area" id="appimage-drop-zone">
+                    <div class="upload-icon">📦</div>
+                    <p>AppImage hier ablegen oder klicken zum Auswählen</p>
+                    <input type="file" id="appimage-input" accept=".AppImage" hidden>
+                    <div class="file-info" id="appimage-info" style="display: none;">
+                        <span class="filename"></span>
+                        <span class="filesize"></span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Step 2: Upload Key or Enter Key ID -->
+            <section class="card" id="step2" style="opacity: 0.5; pointer-events: none;">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <h2>GPG Key bereitstellen</h2>
+                </div>
+                
+                <div class="key-options">
+                    <div class="option-tabs">
+                        <button class="tab-button active" data-tab="upload">Key hochladen</button>
+                        <button class="tab-button" data-tab="keyid">Key ID eingeben</button>
+                    </div>
+
+                    <div class="tab-content active" id="upload-tab">
+                        <div class="upload-area" id="key-drop-zone">
+                            <div class="upload-icon">🔑</div>
+                            <p>GPG Private Key hier ablegen oder klicken</p>
+                            <input type="file" id="key-input" accept=".key,.gpg,.asc" hidden>
+                            <div class="file-info" id="key-info" style="display: none;">
+                                <span class="filename"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="keyid-tab">
+                        <div class="form-group">
+                            <label for="key-id-input">Key ID:</label>
+                            <input type="text" id="key-id-input" placeholder="z.B. C407155E5D49FE6B">
+                            <small>Key muss bereits im System GPG Keyring vorhanden sein</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="passphrase-input">Passphrase (optional):</label>
+                    <input type="password" id="passphrase-input" placeholder="Key-Passphrase falls vorhanden">
+                </div>
+            </section>
+
+            <!-- Step 3: Sign -->
+            <section class="card" id="step3" style="opacity: 0.5; pointer-events: none;">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <h2>Signieren</h2>
+                </div>
+                
+                <button class="btn-primary" id="sign-button">
+                    <span class="btn-icon">✍️</span>
+                    AppImage signieren
+                </button>
+
+                <div class="progress" id="progress" style="display: none;">
+                    <div class="progress-bar"></div>
+                    <p class="progress-text">Signierung läuft...</p>
+                </div>
+            </section>
+
+            <!-- Step 4: Results -->
+            <section class="card" id="step4" style="display: none;">
+                <div class="step-header">
+                    <span class="step-number">✓</span>
+                    <h2>Ergebnis</h2>
+                </div>
+
+                <div class="result-success" id="result-success">
+                    <div class="success-icon">✅</div>
+                    <h3>Signierung erfolgreich!</h3>
+                    
+                    <div class="verification-details" id="verification-details">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+
+                    <div class="download-buttons">
+                        <a href="#" class="btn-download" id="download-appimage">
+                            <span>📦</span>
+                            Signierte AppImage herunterladen
+                        </a>
+                        <a href="#" class="btn-download" id="download-signature">
+                            <span>🔐</span>
+                            Signatur (.asc) herunterladen
+                        </a>
+                    </div>
+                </div>
+
+                <div class="result-error" id="result-error" style="display: none;">
+                    <div class="error-icon">❌</div>
+                    <h3>Signierung fehlgeschlagen</h3>
+                    <p class="error-message" id="error-message"></p>
+                </div>
+
+                <button class="btn-secondary" id="reset-button">
+                    Neue Signierung starten
+                </button>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank">
+                    GitHub Repository
+                </a>
+                | 
+                Entwicklungszeit: ~4 Stunden statt 2 Tage! 🚀
+            </p>
+        </footer>
+    </div>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

@@ -5,3 +5,17 @@ python-gnupg>=0.5.0
 
 # For better CLI output (optional but recommended)
 colorama>=0.4.6
+
+# Web Framework (FastAPI)
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0
+python-multipart>=0.0.9
+
+# Async file handling
+aiofiles>=24.1.0n dependencies for AppImage Re-Signer
+
+# Core GPG library for Python
+python-gnupg>=0.5.0
+
+# For better CLI output (optional but recommended)
+colorama>=0.4.6
