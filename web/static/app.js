@@ -174,6 +174,11 @@ async function uploadAppImage(file) {
                 const verifyButton = document.getElementById('verify-signature-button');
                 verifyButton.style.display = 'inline-flex';
                 verifyButton.onclick = () => verifyUploadedSignature();
+                
+                // Add pulse animation after a short delay
+                setTimeout(() => {
+                    verifyButton.classList.add('pulse');
+                }, 500);
             } else {
                 // No signature found
                 console.log('❌ No signature found');
@@ -515,6 +520,62 @@ function displaySignatureInfo(elementId, signatureInfo) {
         const sigTypeIcon = signatureInfo.type === 'embedded' ? '📦' : '📄';
         const sigTypeName = signatureInfo.type === 'embedded' ? 'Eingebettete Signatur' : 'Externe Signatur (.asc)';
         
+        // Build metadata section if available
+        let metadataHtml = '';
+        if (signatureInfo.metadata && signatureInfo.metadata.raw_available) {
+            const meta = signatureInfo.metadata;
+            
+            metadataHtml = `
+                <div class="signature-live-preview">
+                    <h5 style="margin: 15px 0 10px 0; font-size: 14px; color: var(--text-primary);">
+                        ✨ Live-Analyse der Signatur:
+                    </h5>
+                    <div class="metadata-grid">
+                        ${meta.algorithm ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">🔑 Algorithmus:</span>
+                            <span class="metadata-value">${meta.algorithm}</span>
+                        </div>
+                        ` : ''}
+                        
+                        ${meta.hash_algorithm ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">🔒 Hash:</span>
+                            <span class="metadata-value">${meta.hash_algorithm}</span>
+                        </div>
+                        ` : ''}
+                        
+                        ${meta.version ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">📋 Version:</span>
+                            <span class="metadata-value">OpenPGP v${meta.version}</span>
+                        </div>
+                        ` : ''}
+                        
+                        ${meta.timestamp_readable ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">📅 Erstellt:</span>
+                            <span class="metadata-value">${meta.timestamp_readable}</span>
+                        </div>
+                        ` : ''}
+                        
+                        ${meta.key_id ? `
+                        <div class="metadata-item">
+                            <span class="metadata-label">🆔 Key ID:</span>
+                            <span class="metadata-value" style="font-family: 'Courier New', monospace;">${formatKeyId(meta.key_id)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${meta.parse_error ? `
+                    <p style="color: #856404; font-size: 12px; margin-top: 10px;">
+                        ⚠️ Teilweise Metadaten: ${meta.parse_error}
+                    </p>
+                    ` : ''}
+                </div>
+            `;
+        }
+        
         content.innerHTML = `
             <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                 <span style="font-size: 24px;">${sigTypeIcon}</span>
@@ -525,14 +586,24 @@ function displaySignatureInfo(elementId, signatureInfo) {
                     </p>
                 </div>
             </div>
-            <details style="margin-top: 10px;">
-                <summary style="cursor: pointer; color: var(--global--color-ionos-blue); font-size: 14px;">
-                    Signatur-Daten anzeigen
+            
+            ${metadataHtml}
+            
+            <details style="margin-top: 15px;">
+                <summary style="cursor: pointer; color: var(--global--color-ionos-blue); font-size: 14px; font-weight: 600;">
+                    📄 Signatur-Rohdaten anzeigen
                 </summary>
-                <pre style="background: var(--upload-zone-bg); padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 11px; margin-top: 10px;">${signatureInfo.signature_data}</pre>
+                <div style="position: relative; margin-top: 10px;">
+                    <button onclick="copyToClipboard('${elementId}-signature-raw')" 
+                            style="position: absolute; top: 10px; right: 10px; padding: 5px 10px; background: var(--global--color-ionos-blue); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; z-index: 10;">
+                        📋 Kopieren
+                    </button>
+                    <pre id="${elementId}-signature-raw" style="background: var(--upload-zone-bg); padding: 15px 10px 10px 10px; border-radius: 8px; overflow-x: auto; font-size: 11px; margin: 0;">${escapeHtml(signatureInfo.signature_data)}</pre>
+                </div>
             </details>
-            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
-                <em>ℹ️ Klicken Sie auf "Signatur verifizieren" um die Gültigkeit zu prüfen.</em>
+            
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 15px; padding: 12px; background: var(--upload-zone-bg); border-radius: 8px; border-left: 4px solid var(--global--color-ionos-blue);">
+                <em>ℹ️ Klicken Sie auf "Signatur verifizieren" um die Gültigkeit mit GPG zu prüfen.</em>
             </p>
         `;
     } else {
@@ -543,6 +614,43 @@ function displaySignatureInfo(elementId, signatureInfo) {
             </p>
         `;
     }
+}
+
+// Helper function to format Key ID with spaces
+function formatKeyId(keyId) {
+    if (!keyId) return '';
+    // Add space every 4 characters: A1EA6539514E0105 -> A1EA 6539 514E 0105
+    return keyId.match(/.{1,4}/g).join(' ');
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Copy to clipboard function
+function copyToClipboard(elementId) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const text = element.textContent;
+    navigator.clipboard.writeText(text).then(() => {
+        // Show temporary feedback
+        const button = event.target;
+        const originalText = button.textContent;
+        button.textContent = '✓ Kopiert!';
+        button.style.background = '#2ecc71';
+        
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = 'var(--global--color-ionos-blue)';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Kopieren fehlgeschlagen');
+    });
 }
 
 async function verifyUploadedSignature() {

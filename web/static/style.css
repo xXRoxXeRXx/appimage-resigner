@@ -506,6 +506,18 @@ input[type="checkbox"] {
     border: 2px solid var(--border-color);
     background: var(--card-bg);
     transition: all 0.3s ease;
+    animation: slideInFromTop 0.4s ease-out;
+}
+
+@keyframes slideInFromTop {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }
 
 .signature-info h4 {
@@ -547,6 +559,130 @@ input[type="checkbox"] {
     border-color: #28a745;
     box-shadow: 0 4px 16px rgba(40, 167, 69, 0.2);
 }
+
+/* Live Preview Metadata */
+.signature-live-preview {
+    background: var(--upload-zone-bg);
+    border: 2px solid var(--global--color-ionos-blue);
+    border-radius: 12px;
+    padding: 15px;
+    margin-top: 15px;
+    animation: fadeInScale 0.5s ease-out;
+}
+
+@keyframes fadeInScale {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.signature-live-preview h5 {
+    color: var(--text-primary);
+    font-weight: 700;
+}
+
+.metadata-grid {
+    display: grid;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.metadata-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    transition: all 0.2s ease;
+}
+
+.metadata-item:hover {
+    border-color: var(--global--color-ionos-blue);
+    transform: translateX(3px);
+    box-shadow: 0 2px 8px var(--shadow-sm);
+}
+
+.metadata-label {
+    font-weight: 700;
+    color: var(--text-primary);
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.metadata-value {
+    color: var(--global--color-ionos-blue);
+    font-weight: 600;
+    font-size: 13px;
+    text-align: right;
+}
+
+/* Pulse animation for verify button */
+@keyframes pulse {
+    0%, 100% { 
+        box-shadow: 0 0 0 0 rgba(0, 61, 143, 0.7);
+    }
+    50% { 
+        box-shadow: 0 0 0 10px rgba(0, 61, 143, 0);
+    }
+}
+
+.btn-secondary.pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Copy button hover effect */
+button[onclick^="copyToClipboard"] {
+    transition: all 0.2s ease;
+}
+
+button[onclick^="copyToClipboard"]:hover {
+    transform: scale(1.05);
+    box-shadow: 0 2px 8px rgba(0, 61, 143, 0.3);
+}
+
+/* Details/Summary styling */
+details summary {
+    list-style: none;
+    padding: 10px;
+    background: var(--upload-zone-bg);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+details summary::-webkit-details-marker {
+    display: none;
+}
+
+details summary::before {
+    content: '▶ ';
+    display: inline-block;
+    transition: transform 0.2s ease;
+    margin-right: 5px;
+}
+
+details[open] summary::before {
+    transform: rotate(90deg);
+}
+
+details summary:hover {
+    background: var(--upload-zone-hover);
+    transform: translateX(3px);
+}
+
+details[open] summary {
+    margin-bottom: 10px;
+    border-bottom: 2px solid var(--global--color-ionos-blue);
+}
+
 
 .signature-info.valid h4,
 .signature-info.signature-valid h4 {

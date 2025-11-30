@@ -9,6 +9,9 @@ import os
 import argparse
 import gnupg
 import shutil
+import base64
+import struct
+from datetime import datetime
 from pathlib import Path
 
 
@@ -54,13 +57,13 @@ class AppImageVerifier:
     def get_signature_info(self, appimage_path):
         """
         Get information about a signature without verifying it.
-        Just checks if a signature exists and extracts basic info.
+        Just checks if a signature exists and extracts basic info + metadata.
         
         Args:
             appimage_path (str): Path to the AppImage file
             
         Returns:
-            dict: Signature information (has_signature, type, signature_data)
+            dict: Signature information (has_signature, type, signature_data, metadata)
         """
         appimage_path = Path(appimage_path)
         
@@ -79,6 +82,9 @@ class AppImageVerifier:
                     sig_start = content.rfind(b'-----BEGIN PGP SIGNATURE-----')
                     sig_data = content[sig_start:].decode('utf-8', errors='ignore')
                     
+                    # Parse metadata
+                    metadata = parse_signature_metadata(sig_data)
+                    
                     # Extract just the first few lines for display
                     sig_lines = sig_data.split('\n')
                     sig_preview = '\n'.join(sig_lines[:10])
@@ -87,7 +93,8 @@ class AppImageVerifier:
                         'has_signature': True,
                         'type': 'embedded',
                         'signature_data': sig_preview + '\n...' if len(sig_lines) > 10 else sig_data,
-                        'size': len(sig_data)
+                        'size': len(sig_data),
+                        'metadata': metadata
                     }
             
             # Check for external .asc file
@@ -95,6 +102,10 @@ class AppImageVerifier:
             if asc_path.exists():
                 with open(asc_path, 'r') as f:
                     sig_data = f.read()
+                    
+                    # Parse metadata
+                    metadata = parse_signature_metadata(sig_data)
+                    
                     sig_lines = sig_data.split('\n')
                     sig_preview = '\n'.join(sig_lines[:10])
                     
@@ -102,7 +113,8 @@ class AppImageVerifier:
                         'has_signature': True,
                         'type': 'external',
                         'signature_data': sig_preview + '\n...' if len(sig_lines) > 10 else sig_data,
-                        'size': len(sig_data)
+                        'size': len(sig_data),
+                        'metadata': metadata
                     }
             
             return {
@@ -373,6 +385,273 @@ def main():
     
     # Exit with appropriate code
     sys.exit(0 if result['valid'] else 1)
+
+
+def get_algorithm_name(algo_id: int) -> str:
+    """
+    Get human-readable name for public key algorithm.
+    
+    Args:
+        algo_id: Algorithm ID from PGP packet
+        
+    Returns:
+        str: Algorithm name
+    """
+    algorithms = {
+        1: 'RSA (Encrypt or Sign)',
+        2: 'RSA (Encrypt Only)',
+        3: 'RSA (Sign Only)',
+        16: 'Elgamal (Encrypt Only)',
+        17: 'DSA (Digital Signature Algorithm)',
+        18: 'ECDH (Elliptic Curve)',
+        19: 'ECDSA (Elliptic Curve Digital Signature Algorithm)',
+        22: 'EdDSA (Ed25519/Ed448)',
+        23: 'AEDH',
+        24: 'AEDSA',
+    }
+    return algorithms.get(algo_id, f'Unknown Algorithm ({algo_id})')
+
+
+def get_hash_algorithm_name(hash_id: int) -> str:
+    """
+    Get human-readable name for hash algorithm.
+    
+    Args:
+        hash_id: Hash algorithm ID from PGP packet
+        
+    Returns:
+        str: Hash algorithm name
+    """
+    hash_algorithms = {
+        1: 'MD5',
+        2: 'SHA-1',
+        3: 'RIPEMD-160',
+        8: 'SHA-256',
+        9: 'SHA-384',
+        10: 'SHA-512',
+        11: 'SHA-224',
+    }
+    return hash_algorithms.get(hash_id, f'Unknown Hash ({hash_id})')
+
+
+def parse_signature_metadata(signature_data: str) -> dict:
+    """
+    Parse PGP signature to extract metadata without GPG verification.
+    Parses the ASCII-armored signature format.
+    
+    Args:
+        signature_data: ASCII-armored PGP signature
+        
+    Returns:
+        dict: Metadata including algorithm, hash, timestamp, key ID, etc.
+    """
+    metadata = {
+        'raw_available': False,
+        'algorithm': None,
+        'hash_algorithm': None,
+        'timestamp': None,
+        'timestamp_readable': None,
+        'key_id': None,
+        'signature_type': None,
+        'version': None,
+    }
+    
+    try:
+        # Extract base64 data between BEGIN and END markers
+        lines = signature_data.split('\n')
+        base64_lines = []
+        in_signature = False
+        
+        for line in lines:
+            line = line.strip()
+            if 'BEGIN PGP SIGNATURE' in line:
+                in_signature = True
+                continue
+            if 'END PGP SIGNATURE' in line:
+                break
+            if in_signature and line and not line.startswith('='):
+                base64_lines.append(line)
+        
+        if not base64_lines:
+            return metadata
+        
+        # Decode base64
+        base64_data = ''.join(base64_lines)
+        try:
+            decoded = base64.b64decode(base64_data)
+        except Exception as e:
+            metadata['parse_error'] = f'Base64 decode error: {str(e)}'
+            return metadata
+        
+        if len(decoded) < 10:
+            metadata['parse_error'] = 'Signature data too short'
+            return metadata
+        
+        metadata['raw_available'] = True
+        
+        # Parse OpenPGP packet structure
+        # Reference: RFC 4880 (OpenPGP Message Format)
+        
+        idx = 0
+        packet_tag = decoded[idx]
+        idx += 1
+        
+        # Check if it's a new format packet (bit 6 set)
+        if packet_tag & 0x40:
+            # New format packet
+            packet_type = packet_tag & 0x3f
+            
+            # Read packet length (simplified for common case)
+            if idx < len(decoded):
+                length_byte = decoded[idx]
+                idx += 1
+                
+                if length_byte < 192:
+                    packet_length = length_byte
+                elif length_byte < 224:
+                    if idx < len(decoded):
+                        packet_length = ((length_byte - 192) << 8) + decoded[idx] + 192
+                        idx += 1
+        else:
+            # Old format packet
+            packet_type = (packet_tag >> 2) & 0x0f
+            length_type = packet_tag & 0x03
+            
+            # Read length based on length_type
+            if length_type == 0:
+                packet_length = decoded[idx] if idx < len(decoded) else 0
+                idx += 1
+            elif length_type == 1:
+                packet_length = struct.unpack('>H', decoded[idx:idx+2])[0] if idx+1 < len(decoded) else 0
+                idx += 2
+            elif length_type == 2:
+                packet_length = struct.unpack('>I', decoded[idx:idx+4])[0] if idx+3 < len(decoded) else 0
+                idx += 4
+        
+        # Packet type 2 = Signature Packet
+        if packet_type == 2:
+            if idx >= len(decoded):
+                return metadata
+            
+            # Version
+            version = decoded[idx]
+            metadata['version'] = version
+            idx += 1
+            
+            if version == 4 or version == 5:
+                # Version 4/5 signature
+                if idx >= len(decoded):
+                    return metadata
+                
+                sig_type = decoded[idx]
+                metadata['signature_type'] = sig_type
+                idx += 1
+                
+                if idx >= len(decoded):
+                    return metadata
+                    
+                pub_key_algo = decoded[idx]
+                metadata['algorithm'] = get_algorithm_name(pub_key_algo)
+                metadata['algorithm_id'] = pub_key_algo
+                idx += 1
+                
+                if idx >= len(decoded):
+                    return metadata
+                    
+                hash_algo = decoded[idx]
+                metadata['hash_algorithm'] = get_hash_algorithm_name(hash_algo)
+                metadata['hash_algorithm_id'] = hash_algo
+                idx += 1
+                
+                # Hashed subpacket data length
+                if idx + 1 >= len(decoded):
+                    return metadata
+                    
+                hashed_length = struct.unpack('>H', decoded[idx:idx+2])[0]
+                idx += 2
+                
+                # Parse hashed subpackets for timestamp and other data
+                subpacket_end = idx + hashed_length
+                while idx < subpacket_end and idx < len(decoded):
+                    # Subpacket length
+                    if decoded[idx] < 192:
+                        sub_length = decoded[idx]
+                        idx += 1
+                    elif decoded[idx] < 255:
+                        if idx + 1 >= len(decoded):
+                            break
+                        sub_length = ((decoded[idx] - 192) << 8) + decoded[idx+1] + 192
+                        idx += 2
+                    else:
+                        if idx + 4 >= len(decoded):
+                            break
+                        sub_length = struct.unpack('>I', decoded[idx+1:idx+5])[0]
+                        idx += 5
+                    
+                    if idx >= len(decoded) or sub_length < 1:
+                        break
+                    
+                    sub_type = decoded[idx]
+                    idx += 1
+                    sub_length -= 1
+                    
+                    # Subpacket type 2 = Signature Creation Time
+                    if sub_type == 2 and sub_length == 4:
+                        if idx + 4 <= len(decoded):
+                            timestamp = struct.unpack('>I', decoded[idx:idx+4])[0]
+                            metadata['timestamp'] = timestamp
+                            metadata['timestamp_readable'] = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                    
+                    # Subpacket type 16 = Issuer Key ID
+                    elif sub_type == 16 and sub_length == 8:
+                        if idx + 8 <= len(decoded):
+                            key_id_bytes = decoded[idx:idx+8]
+                            metadata['key_id'] = ''.join(f'{b:02X}' for b in key_id_bytes)
+                    
+                    idx += sub_length
+            
+            elif version == 3:
+                # Version 3 signature (older format)
+                # Skip length of hashed material (1 byte)
+                idx += 1
+                
+                if idx >= len(decoded):
+                    return metadata
+                    
+                sig_type = decoded[idx]
+                metadata['signature_type'] = sig_type
+                idx += 1
+                
+                # Timestamp (4 bytes)
+                if idx + 4 <= len(decoded):
+                    timestamp = struct.unpack('>I', decoded[idx:idx+4])[0]
+                    metadata['timestamp'] = timestamp
+                    metadata['timestamp_readable'] = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                    idx += 4
+                
+                # Key ID (8 bytes)
+                if idx + 8 <= len(decoded):
+                    key_id_bytes = decoded[idx:idx+8]
+                    metadata['key_id'] = ''.join(f'{b:02X}' for b in key_id_bytes)
+                    idx += 8
+                
+                # Public key algorithm
+                if idx < len(decoded):
+                    pub_key_algo = decoded[idx]
+                    metadata['algorithm'] = get_algorithm_name(pub_key_algo)
+                    metadata['algorithm_id'] = pub_key_algo
+                    idx += 1
+                
+                # Hash algorithm
+                if idx < len(decoded):
+                    hash_algo = decoded[idx]
+                    metadata['hash_algorithm'] = get_hash_algorithm_name(hash_algo)
+                    metadata['hash_algorithm_id'] = hash_algo
+    
+    except Exception as e:
+        metadata['parse_error'] = f'Parse error: {str(e)}'
+    
+    return metadata
 
 
 if __name__ == "__main__":
