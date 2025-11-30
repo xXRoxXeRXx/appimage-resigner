@@ -4,10 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AppImage Re-Signer - Web Interface</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16px.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32px.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48px.png">
+    
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+    <!-- Logo Header - Outside Container, Above Container -->
+    <div style="max-width: 800px; width: 100%; margin: 0 auto 20px auto; padding: 0 20px;">
+        <img src="/static/logo_ionos.png" alt="IONOS Logo" style="max-width: 150px; height: auto;">
+    </div>
+
     <div class="container">
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" id="theme-toggle" title="Dark/Light Mode wechseln">
+            <span id="theme-icon">🌙</span>
+        </button>
+
         <header>
             <h1>🔐 AppImage Re-Signer</h1>
             <p class="subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
@@ -29,6 +46,22 @@
                         <span class="filename"></span>
                         <span class="filesize"></span>
                     </div>
+                </div>
+
+                <!-- Original Signature Info -->
+                <div class="signature-info" id="original-signature" style="display: none;">
+                    <h4>📜 Signatur gefunden:</h4>
+                    <div id="original-signature-content"></div>
+                    <button class="btn-secondary" id="verify-signature-button" style="margin-top: 15px; display: none;">
+                        <span class="btn-icon">🔍</span>
+                        Signatur verifizieren
+                    </button>
+                </div>
+
+                <!-- Optional: Upload .asc signature file -->
+                <div class="upload-hint" style="margin-top: 1rem; display: none;" id="signature-upload-hint">
+                    <small>Optional: <a href="#" id="upload-signature-link">Signatur-Datei (.asc) hochladen</a> um die aktuelle Signatur zu prüfen</small>
+                    <input type="file" id="signature-input" accept=".asc" hidden>
                 </div>
             </section>
 
@@ -68,6 +101,14 @@
                 <div class="form-group">
                     <label for="passphrase-input">Passphrase (optional):</label>
                     <input type="password" id="passphrase-input" placeholder="Key-Passphrase falls vorhanden">
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="embed-signature" style="width: auto; margin: 0;">
+                        <span>Signatur in AppImage einbetten</span>
+                    </label>
+                    <small>Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur</small>
                 </div>
             </section>
 
@@ -123,6 +164,7 @@
                 </div>
 
                 <button class="btn-secondary" id="reset-button">
+                    <span class="btn-icon">🔄</span>
                     Neue Signierung starten
                 </button>
             </section>
@@ -133,8 +175,7 @@
                 <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank">
                     GitHub Repository
                 </a>
-                | 
-                Entwicklungszeit: ~4 Stunden statt 2 Tage! 🚀
+                | Made with ❤️ in Berlin and AI 🚀
             </p>
         </footer>
     </div>

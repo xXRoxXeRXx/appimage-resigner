@@ -158,10 +158,29 @@ async def upload_appimage(
         session.appimage_path = file_path
         session.status = "appimage_uploaded"
         
+        # Check for existing signature info (without verification)
+        signature_info = None
+        
+        try:
+            verifier = AppImageVerifier()
+            # Just get signature info, don't verify yet
+            signature_info = verifier.get_signature_info(str(file_path))
+            print(f"ℹ Signature info: {signature_info}")
+        except Exception as e:
+            print(f"⚠ Could not get signature info: {e}")
+            import traceback
+            traceback.print_exc()
+            # Don't fail the upload, just return no signature info
+            signature_info = {
+                'has_signature': False,
+                'error': f"Could not read signature: {str(e)}"
+            }
+        
         return {
             "status": "success",
             "filename": file.filename,
-            "size": len(content)
+            "size": len(content),
+            "signature_info": signature_info
         }
         
     except Exception as e:
@@ -202,11 +221,49 @@ async def upload_key(
         raise HTTPException(status_code=500, detail=f"Key upload failed: {str(e)}")
 
 
+@app.post("/api/upload/signature")
+async def upload_signature(
+    session_id: str = Form(...),
+    file: UploadFile = File(...)
+):
+    """Upload the .asc signature file for the AppImage"""
+    
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = sessions[session_id]
+    
+    if not session.appimage_path:
+        raise HTTPException(status_code=400, detail="Upload AppImage first")
+    
+    # Save signature file next to AppImage
+    signature_path = Path(str(session.appimage_path) + ".asc")
+    
+    try:
+        async with aiofiles.open(signature_path, 'wb') as out_file:
+            content = await file.read()
+            await out_file.write(content)
+        
+        # Verify the signature
+        verifier = AppImageVerifier()
+        result = verifier.verify_signature(str(session.appimage_path))
+        
+        return {
+            "status": "success",
+            "message": "Signature uploaded and verified",
+            "verification": result
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Signature upload failed: {str(e)}")
+
+
 @app.post("/api/sign")
 async def sign_appimage(
     session_id: str = Form(...),
     key_id: Optional[str] = Form(None),
     passphrase: Optional[str] = Form(None),
+    embed_signature: bool = Form(False),
     background_tasks: BackgroundTasks = None
 ):
     """Sign the uploaded AppImage"""
@@ -229,7 +286,13 @@ async def sign_appimage(
         resigner = AppImageResigner()
         
         # Sign the AppImage
-        output_path = SIGNED_DIR / f"{session_id}_{session.appimage_path.name}"
+        # Use original filename without session_id prefix since it's already in the session folder
+        original_filename = session.appimage_path.name
+        # Remove session_id prefix if it exists
+        if original_filename.startswith(f"{session_id}_"):
+            original_filename = original_filename[len(session_id) + 1:]
+        
+        output_path = SIGNED_DIR / f"{session_id}_{original_filename}"
         signature_path = Path(str(output_path) + ".asc")
         
         # Copy original to signed directory
@@ -239,7 +302,8 @@ async def sign_appimage(
         success = resigner.sign_appimage(
             str(output_path),
             key_id=key_id,
-            passphrase=passphrase
+            passphrase=passphrase,
+            embed_signature=embed_signature
         )
         
         if success:
@@ -248,8 +312,11 @@ async def sign_appimage(
             session.status = "signed"
             
             # Verify signature
+            print(f"🔍 Verifying signature for: {output_path}")
+            print(f"🔍 Embed signature was: {embed_signature}")
             verifier = AppImageVerifier()
             verification = verifier.verify_signature(str(output_path))
+            print(f"🔍 Verification result: {verification}")
             session.verification_result = verification
             
             return {
@@ -270,6 +337,34 @@ async def sign_appimage(
         session.status = "failed"
         session.error = str(e)
         raise HTTPException(status_code=500, detail=f"Signing error: {str(e)}")
+
+
+@app.post("/api/verify/uploaded/{session_id}")
+async def verify_uploaded_signature(session_id: str):
+    """Verify the signature of an uploaded AppImage"""
+    
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = sessions[session_id]
+    
+    if not session.appimage_path:
+        raise HTTPException(status_code=400, detail="No AppImage uploaded")
+    
+    try:
+        verifier = AppImageVerifier()
+        result = verifier.verify_signature(str(session.appimage_path))
+        print(f"🔍 Verification result: {result}")
+        
+        return {
+            "status": "success",
+            "verification": result
+        }
+        
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Verification error: {str(e)}")
 
 
 @app.get("/api/verify/{session_id}")
@@ -298,7 +393,7 @@ async def verify_signature(session_id: str):
 
 
 @app.get("/api/download/appimage/{session_id}")
-async def download_appimage(session_id: str, background_tasks: BackgroundTasks):
+async def download_appimage(session_id: str):
     """Download the signed AppImage"""
     
     if session_id not in sessions:
@@ -309,8 +404,7 @@ async def download_appimage(session_id: str, background_tasks: BackgroundTasks):
     if not session.signed_path or not session.signed_path.exists():
         raise HTTPException(status_code=404, detail="Signed AppImage not found")
     
-    # Schedule cleanup after download
-    background_tasks.add_task(cleanup_session, session_id)
+    # Don't cleanup yet - user might want to download signature too
     
     return FileResponse(
         session.signed_path,

@@ -5,9 +5,34 @@ Manages GPG keys for AppImage signing.
 """
 
 import sys
+import os
 import argparse
 import gnupg
 from pathlib import Path
+
+
+def find_gpg_binary():
+    """Find GPG binary on the system."""
+    # Common GPG locations on Windows
+    gpg_paths = [
+        r"C:\Program Files (x86)\GnuPG\bin\gpg.exe",
+        r"C:\Program Files\GnuPG\bin\gpg.exe",
+        r"C:\Program Files (x86)\Gpg4win\bin\gpg.exe",
+        r"C:\Program Files\Gpg4win\bin\gpg.exe",
+    ]
+    
+    # Check if gpg is in PATH
+    import shutil
+    gpg_in_path = shutil.which('gpg')
+    if gpg_in_path:
+        return gpg_in_path
+    
+    # Check common locations
+    for path in gpg_paths:
+        if os.path.exists(path):
+            return path
+    
+    return None
 
 
 class GPGKeyManager:
@@ -20,7 +45,11 @@ class GPGKeyManager:
         Args:
             gpg_home (str): Path to GPG home directory. Defaults to ~/.gnupg
         """
-        self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
+        gpg_binary = find_gpg_binary()
+        if gpg_binary:
+            self.gpg = gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary) if gpg_home else gnupg.GPG(gpgbinary=gpg_binary)
+        else:
+            self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
     
     def generate_key(self, name, email, comment="", key_type="RSA", 
                     key_length=4096, expire_date=0, passphrase=None):

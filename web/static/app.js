@@ -1,5 +1,41 @@
 // AppImage Re-Signer - Frontend Logic
 
+// Dark Mode Management
+function initDarkMode() {
+    const savedTheme = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    
+    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('theme-icon').textContent = '☀️';
+    }
+}
+
+function toggleDarkMode() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    
+    if (isDark) {
+        document.documentElement.removeAttribute('data-theme');
+        document.getElementById('theme-icon').textContent = '🌙';
+        localStorage.setItem('theme', 'light');
+    } else {
+        document.documentElement.setAttribute('data-theme', 'dark');
+        document.getElementById('theme-icon').textContent = '☀️';
+        localStorage.setItem('theme', 'dark');
+    }
+}
+
+// Initialize dark mode on load
+document.addEventListener('DOMContentLoaded', () => {
+    initDarkMode();
+    
+    // Add event listener to theme toggle
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+        themeToggle.addEventListener('click', toggleDarkMode);
+    }
+});
+
 let sessionId = null;
 let appImageFile = null;
 let keyFile = null;
@@ -121,18 +157,77 @@ async function uploadAppImage(file) {
             body: formData
         });
         
+        const data = await response.json();
+        
         if (response.ok) {
-            console.log('AppImage uploaded');
+            console.log('✓ AppImage uploaded successfully');
+            console.log('Response data:', data);
+            
+            // Show signature info if present (without verification)
+            if (data.signature_info && data.signature_info.has_signature) {
+                console.log('📝 Signature found:', data.signature_info);
+                
+                displaySignatureInfo('original-signature', data.signature_info);
+                document.getElementById('original-signature').style.display = 'block';
+                
+                // Show verify button
+                const verifyButton = document.getElementById('verify-signature-button');
+                verifyButton.style.display = 'inline-flex';
+                verifyButton.onclick = () => verifyUploadedSignature();
+            } else {
+                // No signature found
+                console.log('❌ No signature found');
+                document.getElementById('signature-upload-hint').style.display = 'block';
+            }
+            
             enableStep(step2);
             checkReadyToSign();
         } else {
-            const error = await response.json();
-            alert('Upload fehlgeschlagen: ' + error.detail);
+            alert('Upload fehlgeschlagen: ' + data.detail);
         }
     } catch (error) {
         console.error('Upload error:', error);
         alert('Upload fehlgeschlagen');
     }
+}
+
+// Signature upload
+const signatureInput = document.getElementById('signature-input');
+const uploadSignatureLink = document.getElementById('upload-signature-link');
+
+if (uploadSignatureLink) {
+    uploadSignatureLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        signatureInput.click();
+    });
+}
+
+if (signatureInput) {
+    signatureInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append('session_id', sessionId);
+        formData.append('file', file);
+        
+        try {
+            const response = await fetch('/api/upload/signature', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const data = await response.json();
+            
+            if (response.ok && data.verification) {
+                displaySignature('original-signature', data.verification, 'Aktuelle Signatur:');
+                document.getElementById('original-signature').style.display = 'block';
+                document.getElementById('signature-upload-hint').style.display = 'none';
+            }
+        } catch (error) {
+            console.error('Signature upload error:', error);
+        }
+    });
 }
 
 // Key Upload
@@ -226,6 +321,9 @@ async function signAppImage() {
         formData.append('passphrase', passphrase);
     }
     
+    const embedSignature = document.getElementById('embed-signature').checked;
+    formData.append('embed_signature', embedSignature);
+    
     signButton.disabled = true;
     progress.style.display = 'block';
     
@@ -258,25 +356,42 @@ function showSuccess(data) {
     
     // Show verification details
     const verification = data.verification;
-    if (verification && verification.valid) {
+    console.log('Verification data:', verification);
+    
+    if (verification) {
+        if (verification.valid) {
+            verificationDetails.innerHTML = `
+                <h4>✓ Signatur gültig</h4>
+                <dl>
+                    <dt>Signiert von:</dt>
+                    <dd>${verification.username || 'Unknown'}</dd>
+                    
+                    <dt>Key ID:</dt>
+                    <dd>${verification.key_id}</dd>
+                    
+                    <dt>Fingerprint:</dt>
+                    <dd>${verification.fingerprint || 'N/A'}</dd>
+                    
+                    <dt>Vertrauensstufe:</dt>
+                    <dd>${verification.trust_level || 'Unknown'}</dd>
+                    
+                    <dt>Zeitstempel:</dt>
+                    <dd>${verification.timestamp ? new Date(verification.timestamp * 1000).toLocaleString('de-DE') : 'N/A'}</dd>
+                    
+                    ${verification.embedded ? '<dt>Typ:</dt><dd>Eingebettete Signatur ✓</dd>' : '<dt>Typ:</dt><dd>Externe .asc Datei</dd>'}
+                </dl>
+            `;
+        } else {
+            verificationDetails.innerHTML = `
+                <h4 style="color: #dc3545;">⚠ Signatur erstellt, aber Verifikation ausstehend</h4>
+                <p>Die Signatur wurde erfolgreich erstellt. Die Verifikation kann fehlschlagen, wenn der öffentliche Schlüssel nicht im Keyring verfügbar ist.</p>
+                ${verification.error ? `<p><small>Details: ${verification.error}</small></p>` : ''}
+            `;
+        }
+    } else {
         verificationDetails.innerHTML = `
-            <h4>✓ Signatur gültig</h4>
-            <dl>
-                <dt>Signiert von:</dt>
-                <dd>${verification.username || 'Unknown'}</dd>
-                
-                <dt>Key ID:</dt>
-                <dd>${verification.key_id}</dd>
-                
-                <dt>Fingerprint:</dt>
-                <dd>${verification.fingerprint || 'N/A'}</dd>
-                
-                <dt>Vertrauensstufe:</dt>
-                <dd>${verification.trust_level || 'Unknown'}</dd>
-                
-                <dt>Zeitstempel:</dt>
-                <dd>${verification.timestamp ? new Date(verification.timestamp * 1000).toLocaleString('de-DE') : 'N/A'}</dd>
-            </dl>
+            <h4 style="color: #ffc107;">ℹ Signatur erstellt</h4>
+            <p>Die Signatur wurde erfolgreich erstellt. Verifikationsinformationen sind nicht verfügbar.</p>
         `;
     }
     
@@ -315,4 +430,148 @@ function formatFileSize(bytes) {
     const sizes = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+}
+
+function displaySignature(elementId, verification, title) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    let cssClass = '';
+    let statusIcon = '';
+    
+    if (verification.valid) {
+        cssClass = 'signature-valid';
+        statusIcon = '✅';
+    } else if (verification.has_signature === false) {
+        cssClass = 'signature-invalid';
+        statusIcon = '⚠️';
+    } else {
+        cssClass = 'signature-invalid';
+        statusIcon = '❌';
+    }
+    
+    element.className = `signature-info ${cssClass}`;
+    
+    const content = document.getElementById(`${elementId}-content`) || element;
+    
+    if (verification.valid) {
+        const sigType = verification.has_signature ? '📦 Eingebettete Signatur' : '📄 Externe Signatur';
+        
+        content.innerHTML = `
+            <h4>${statusIcon} ${title}</h4>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-bottom: 15px;">
+                ${sigType}
+            </p>
+            <dl>
+                <dt>Signiert von:</dt>
+                <dd>${verification.username || 'Unknown'}</dd>
+                
+                <dt>Key ID:</dt>
+                <dd>${verification.key_id || 'N/A'}</dd>
+                
+                <dt>Fingerprint:</dt>
+                <dd>${verification.fingerprint || 'N/A'}</dd>
+                
+                <dt>Vertrauensstufe:</dt>
+                <dd>${verification.trust_level || 'Unknown'}</dd>
+                
+                <dt>Zeitstempel:</dt>
+                <dd>${verification.timestamp ? new Date(verification.timestamp * 1000).toLocaleString('de-DE') : 'N/A'}</dd>
+            </dl>
+        `;
+    } else if (verification.has_signature === false) {
+        // No signature found at all
+        content.innerHTML = `
+            <h4>${statusIcon} ${title}</h4>
+            <p style="color: #856404; margin: 10px 0;">Keine Signatur gefunden</p>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                <em>Diese AppImage hat weder eine eingebettete Signatur noch eine externe .asc-Datei. 
+                Sie können eine neue Signatur erstellen, indem Sie unten einen GPG-Key hochladen.</em>
+            </p>
+        `;
+    } else {
+        // Invalid signature
+        const errorMsg = verification.error || 'Signatur ungültig';
+        const keyInfo = verification.key_id ? `<p><small>Key ID: ${verification.key_id}</small></p>` : '';
+        
+        content.innerHTML = `
+            <h4>${statusIcon} ${title}</h4>
+            <p style="color: #721c24; margin: 10px 0;">${errorMsg}</p>
+            ${keyInfo}
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                <em>Die Signatur konnte nicht verifiziert werden. Möglicherweise fehlt der öffentliche Schlüssel oder die Signatur ist beschädigt.</em>
+            </p>
+        `;
+    }
+}
+
+function displaySignatureInfo(elementId, signatureInfo) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    const content = document.getElementById(`${elementId}-content`) || element;
+    
+    if (signatureInfo.has_signature) {
+        const sigTypeIcon = signatureInfo.type === 'embedded' ? '📦' : '📄';
+        const sigTypeName = signatureInfo.type === 'embedded' ? 'Eingebettete Signatur' : 'Externe Signatur (.asc)';
+        
+        content.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <span style="font-size: 24px;">${sigTypeIcon}</span>
+                <div>
+                    <strong>${sigTypeName}</strong>
+                    <p style="font-size: 13px; color: var(--text-secondary); margin: 5px 0 0 0;">
+                        Größe: ${signatureInfo.size} bytes
+                    </p>
+                </div>
+            </div>
+            <details style="margin-top: 10px;">
+                <summary style="cursor: pointer; color: var(--global--color-ionos-blue); font-size: 14px;">
+                    Signatur-Daten anzeigen
+                </summary>
+                <pre style="background: var(--upload-zone-bg); padding: 10px; border-radius: 8px; overflow-x: auto; font-size: 11px; margin-top: 10px;">${signatureInfo.signature_data}</pre>
+            </details>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                <em>ℹ️ Klicken Sie auf "Signatur verifizieren" um die Gültigkeit zu prüfen.</em>
+            </p>
+        `;
+    } else {
+        content.innerHTML = `
+            <p style="color: #856404; margin: 10px 0;">Keine Signatur gefunden</p>
+            <p style="font-size: 13px; color: var(--text-secondary); margin-top: 10px;">
+                <em>Diese AppImage hat weder eine eingebettete Signatur noch eine externe .asc-Datei.</em>
+            </p>
+        `;
+    }
+}
+
+async function verifyUploadedSignature() {
+    const verifyButton = document.getElementById('verify-signature-button');
+    const originalText = verifyButton.innerHTML;
+    
+    verifyButton.disabled = true;
+    verifyButton.innerHTML = '<span class="btn-icon">⏳</span> Verifiziere...';
+    
+    try {
+        const response = await fetch(`/api/verify/uploaded/${sessionId}`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok && data.verification) {
+            // Replace signature info with verification result
+            displaySignature('original-signature', data.verification, 'Signatur verifiziert');
+            verifyButton.style.display = 'none';
+        } else {
+            alert('Verifikation fehlgeschlagen: ' + (data.detail || 'Unbekannter Fehler'));
+            verifyButton.disabled = false;
+            verifyButton.innerHTML = originalText;
+        }
+    } catch (error) {
+        console.error('Verification error:', error);
+        alert('Verifikation fehlgeschlagen: ' + error.message);
+        verifyButton.disabled = false;
+        verifyButton.innerHTML = originalText;
+    }
 }
