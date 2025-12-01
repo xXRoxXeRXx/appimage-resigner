@@ -2,7 +2,6 @@
 Basic Key Manager Tests
 """
 from src.key_manager import GPGKeyManager
-from pathlib import Path
 
 
 class TestKeyManagerBasics:
