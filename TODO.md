@@ -67,12 +67,28 @@
   - [x] Optional dependencies markieren
 
 ### Features
-- [ ] **Key Storage & Management**
-  - [ ] Keyring-Integration (gpg --list-keys)
-  - [ ] Key-Upload mit Wiederverwendung
-  - [ ] Dropdown für vorhandene Keys
-  - [ ] Key-Metadata anzeigen (Name, Email, Expiry)
-  - [ ] Key-Löschung ermöglichen
+- [x] **Key Storage & Management** ✅ *Abgeschlossen: 01.12.2025*
+  - [x] Keyring-Integration (gpg --list-keys)
+  - [x] Key-Upload mit Wiederverwendung
+  - [x] Dropdown für vorhandene Keys
+  - [x] Key-Metadata anzeigen (Name, Email, Expiry)
+  - [x] Key-Löschung ermöglichen
+  - [x] POST /api/keys/import Endpoint
+  - [x] GET /api/keys/list Endpoint
+  - [x] GET /api/keys/{fingerprint} Endpoint
+  - [x] DELETE /api/keys/{fingerprint} Endpoint
+  - [x] Complete Key Management UI (keys.html)
+  - [x] Drag-and-drop Key Import
+  - [x] Key selection dropdown in signing workflow
+  - [x] Automatic trust-level configuration
+  - [x] API Documentation mit Beispielen
+
+**📊 Key Management Statistiken:**
+- Backend: ~170 Zeilen (4 neue Endpoints, 4 neue Funktionen)
+- Frontend: ~450 Zeilen (keys.html + integration in index.html)
+- API Docs: ~200 Zeilen (vollständige Dokumentation)
+- Gesamt: ~820 Zeilen neuer Code
+- Workflow: Import once → Reuse many times
 
 - [x] **Download-Verbesserungen** ✅
   - [x] ZIP-Download beider Dateien (.AppImage + .asc)
