@@ -17,36 +17,36 @@ from web.api.models import VerificationResponse, SignatureStatus
 
 class VerificationService:
     """Service for handling AppImage signature verification."""
-    
+
     def __init__(self, gpg_home: Optional[str] = None):
         """Initialize verification service."""
         self.verifier = AppImageVerifier(gpg_home=gpg_home)
-    
+
     def verify_signature(
         self,
         appimage_path: Path,
         signature_path: Optional[Path] = None
     ) -> VerificationResponse:
         """Verify AppImage signature.
-        
+
         Args:
             appimage_path: Path to the AppImage file
             signature_path: Optional path to detached signature
-            
+
         Returns:
             VerificationResponse with verification result
         """
         if not appimage_path.exists():
             raise MissingFileError("appimage", str(appimage_path))
-        
+
         try:
             result = self.verifier.verify_signature(
                 str(appimage_path),
                 str(signature_path) if signature_path else None
             )
-            
+
             status = SignatureStatus.VALID if result.get('valid') else SignatureStatus.INVALID
-            
+
             return VerificationResponse(
                 status=status,
                 filename=appimage_path.name,
@@ -58,22 +58,22 @@ class VerificationService:
                 signature_type='embedded' if not signature_path else 'detached',
                 message=result.get('message', 'Verification complete')
             )
-            
+
         except Exception as e:
             if isinstance(e, MissingFileError):
                 raise
             raise GPGVerificationError(str(e))
-    
+
     def get_signature_info(self, appimage_path: Path) -> Dict[str, Any]:
         """Get signature information without verification.
-        
+
         Args:
             appimage_path: Path to the AppImage file
-            
+
         Returns:
             Signature information dictionary
         """
         if not appimage_path.exists():
             raise MissingFileError("appimage", str(appimage_path))
-        
+
         return self.verifier.get_signature_info(str(appimage_path))
