@@ -1,20 +1,20 @@
 {
   "app": {
-    "title": "🔐 AppImage Re-Signer",
-    "subtitle": "Signieren Sie Ihre AppImages einfach über das Web"
+    "title": "🔐 Appimage Re-Signer",
+    "subtitle": "Signieren Sie Ihre Appimages einfach über das Web"
   },
   "buttons": {
-    "sign": "AppImage signieren",
+    "sign": "Appimage signieren",
     "download": "Herunterladen",
     "downloadZip": "Beide als ZIP herunterladen",
-    "downloadAppImage": "Signierte AppImage",
+    "downloadAppImage": "Signierte Appimage",
     "downloadSignature": "Signatur (.asc)",
     "copyCommand": "Befehl kopieren",
     "newSigning": "Neue Signierung"
   },
   "step1": {
-    "title": "AppImage hochladen",
-    "dropzone": "AppImage hier ablegen oder klicken zum Auswählen",
+    "title": "Appimage hochladen",
+    "dropzone": "Appimage hier ablegen oder klicken zum Auswählen",
     "fileSelected": "Datei ausgewählt"
   },
   "step2": {
@@ -28,12 +28,12 @@
     "passphraseHelp": "Key-Passphrase falls vorhanden",
     "keyIdHelp": "z.B. C407155E5D49FE6B",
     "keyIdSystem": "Key muss bereits im System GPG Keyring vorhanden sein",
-    "embedSignature": "Signatur in AppImage einbetten",
+    "embedSignature": "Signatur in Appimage einbetten",
     "embedSignatureHelp": "Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur"
   },
   "step3": {
     "title": "Signieren",
-    "progress": "Signierung läuft..."
+    "progress": "🔐 AppImage wird signiert..."
   },
   "step4": {
     "title": "Ergebnis",
@@ -55,22 +55,22 @@
   },
   "messages": {
     "sessionError": "Fehler beim Erstellen der Session. Bitte laden Sie die Seite neu.",
-    "invalidFile": "Bitte wählen Sie eine .AppImage Datei aus.",
-    "uploadSuccess": "✓ AppImage erfolgreich hochgeladen!",
+    "invalidFile": "Bitte wählen Sie eine .Appimage Datei aus.",
+    "uploadSuccess": "✓ Appimage erfolgreich hochgeladen!",
     "uploadError": "Upload fehlgeschlagen: {error}",
     "uploadFailed": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "keyUploadSuccess": "✓ GPG-Schlüssel erfolgreich hochgeladen!",
     "keyUploadError": "Key-Upload fehlgeschlagen: {error}",
     "keyUploadFailed": "Key-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "signingSuccess": "✓ AppImage erfolgreich signiert!",
+    "signingSuccess": "✓ Appimage erfolgreich signiert!",
     "signingStarted": "🔐 Signierung gestartet...",
-    "signingNotReady": "Bitte laden Sie zuerst AppImage und GPG-Schlüssel hoch",
+    "signingNotReady": "Bitte laden Sie zuerst Appimage und GPG-Schlüssel hoch",
     "downloadStarted": "⬇️ Download gestartet...",
     "copySuccess": "✓ In Zwischenablage kopiert!",
     "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.",
     "verificationError": "Verifikation fehlgeschlagen: {error}",
     "selectionReset": "Auswahl zurückgesetzt",
-    "appImageReset": "AppImage-Auswahl zurückgesetzt",
+    "appImageReset": "Appimage-Auswahl zurückgesetzt",
     "keyReset": "Schlüssel-Auswahl zurückgesetzt"
   },
   "footer": {
@@ -83,7 +83,7 @@
   "keyboard": {
     "shortcuts": "Tastaturkürzel",
     "help": "⌨️ Verfügbare Tastaturkürzel:",
-    "sign": "AppImage signieren",
+    "sign": "Appimage signieren",
     "download": "Ergebnis herunterladen",
     "reset": "Neue Signierung starten",
     "theme": "Dark/Light Mode wechseln",

@@ -6,7 +6,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>AppImage Re-Signer - Web Interface</title>
+    <title>Appimage Re-Signer - Web Interface</title>
     
     <!-- Favicons -->
     <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
@@ -35,8 +35,8 @@
         </button>
 
         <header>
-            <h1 data-i18n="app.title">🔐 AppImage Re-Signer</h1>
-            <p class="subtitle" data-i18n="app.subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
+            <h1 data-i18n="app.title">🔐 Appimage Re-Signer</h1>
+            <p class="subtitle" data-i18n="app.subtitle">Signieren Sie Ihre Appimages einfach über das Web</p>
         </header>
 
         <main>
@@ -44,12 +44,12 @@
             <section class="card" id="step1">
                 <div class="step-header">
                     <span class="step-number">1</span>
-                    <h2 data-i18n="step1.title">AppImage hochladen</h2>
+                    <h2 data-i18n="step1.title">Appimage hochladen</h2>
                 </div>
                 
                 <div class="upload-area" id="appimage-drop-zone">
                     <div class="upload-icon">📦</div>
-                    <p data-i18n="step1.dropzone">AppImage hier ablegen oder klicken zum Auswählen</p>
+                    <p data-i18n="step1.dropzone">Appimage hier ablegen oder klicken zum Auswählen</p>
                     <input type="file" id="appimage-input" accept=".AppImage" hidden>
                     <div class="file-info" id="appimage-info" style="display: none;">
                         <span class="filename"></span>
@@ -115,7 +115,7 @@
                 <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="embed-signature" style="width: auto; margin: 0;">
-                        <span data-i18n="step2.embedSignature">Signatur in AppImage einbetten</span>
+                        <span data-i18n="step2.embedSignature">Signatur in Appimage einbetten</span>
                     </label>
                     <small data-i18n="step2.embedSignatureHelp">Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur</small>
                 </div>
@@ -130,13 +130,15 @@
                 
                 <button class="btn-primary" id="sign-button" data-i18n-title="theme.toggleShortcut">
                     <span class="btn-icon">✍️</span>
-                    <span data-i18n="buttons.sign">AppImage signieren</span>
+                    <span data-i18n="buttons.sign">Appimage signieren</span>
                     <span class="keyboard-hint">Strg+S</span>
                 </button>
 
                 <div class="progress" id="progress" style="display: none;">
-                    <div class="progress-bar"></div>
-                    <p class="progress-text" data-i18n="step3.progress">Signierung läuft...</p>
+                    <div class="spinner-container">
+                        <div class="spinner"></div>
+                        <p class="progress-text" data-i18n="step3.progress">Signierung läuft...</p>
+                    </div>
                 </div>
             </section>
 
@@ -162,7 +164,7 @@
                         </a>
                         <a href="#" class="btn-download" id="download-appimage">
                             <span>📦</span>
-                            <span data-i18n="buttons.downloadAppImage">Signierte AppImage</span>
+                            <span data-i18n="buttons.downloadAppImage">Signierte Appimage</span>
                         </a>
                         <a href="#" class="btn-download" id="download-signature">
                             <span>🔐</span>
@@ -186,7 +188,7 @@
 
         <footer>
             <p>
-                <strong data-i18n="app.title">AppImage Re-Signer</strong> <span id="app-version" class="version-badge">v2.0.0</span>
+                <strong data-i18n="app.title">Appimage Re-Signer</strong> <span id="app-version" class="version-badge">v2.0.0</span>
                 <br>
                 <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank" data-i18n="footer.github">
                     � GitHub

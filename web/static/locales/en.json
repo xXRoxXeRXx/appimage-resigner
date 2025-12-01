@@ -1,20 +1,20 @@
 {
   "app": {
-    "title": "🔐 AppImage Re-Signer",
-    "subtitle": "Sign your AppImages easily via the web"
+    "title": "🔐 Appimage Re-Signer",
+    "subtitle": "Sign your Appimages easily via the web"
   },
   "buttons": {
-    "sign": "Sign AppImage",
+    "sign": "Sign Appimage",
     "download": "Download",
     "downloadZip": "Download both as ZIP",
-    "downloadAppImage": "Signed AppImage",
+    "downloadAppImage": "Signed Appimage",
     "downloadSignature": "Signature (.asc)",
     "copyCommand": "Copy Command",
     "newSigning": "New Signing"
   },
   "step1": {
-    "title": "Upload AppImage",
-    "dropzone": "Drop AppImage here or click to select",
+    "title": "Upload Appimage",
+    "dropzone": "Drop Appimage here or click to select",
     "fileSelected": "File selected"
   },
   "step2": {
@@ -28,12 +28,12 @@
     "passphraseHelp": "Key passphrase if available",
     "keyIdHelp": "e.g. C407155E5D49FE6B",
     "keyIdSystem": "Key must already be in system GPG keyring",
-    "embedSignature": "Embed signature in AppImage",
+    "embedSignature": "Embed signature in Appimage",
     "embedSignatureHelp": "Creates both a .asc file and an embedded signature"
   },
   "step3": {
     "title": "Sign",
-    "progress": "Signing in progress..."
+    "progress": "🔐 Signing AppImage..."
   },
   "step4": {
     "title": "Result",
@@ -55,22 +55,22 @@
   },
   "messages": {
     "sessionError": "Error creating session. Please reload the page.",
-    "invalidFile": "Please select a .AppImage file.",
-    "uploadSuccess": "✓ AppImage uploaded successfully!",
+    "invalidFile": "Please select a .Appimage file.",
+    "uploadSuccess": "✓ Appimage uploaded successfully!",
     "uploadError": "Upload failed: {error}",
     "uploadFailed": "Upload failed. Please try again.",
     "keyUploadSuccess": "✓ GPG key uploaded successfully!",
     "keyUploadError": "Key upload failed: {error}",
     "keyUploadFailed": "Key upload failed. Please try again.",
-    "signingSuccess": "✓ AppImage signed successfully!",
+    "signingSuccess": "✓ Appimage signed successfully!",
     "signingStarted": "🔐 Signing started...",
-    "signingNotReady": "Please upload AppImage and GPG key first",
+    "signingNotReady": "Please upload Appimage and GPG key first",
     "downloadStarted": "⬇️ Download started...",
     "copySuccess": "✓ Copied to clipboard!",
     "copyFailed": "Copy failed. Please select and copy manually.",
     "verificationError": "Verification failed: {error}",
     "selectionReset": "Selection reset",
-    "appImageReset": "AppImage selection reset",
+    "appImageReset": "Appimage selection reset",
     "keyReset": "Key selection reset"
   },
   "footer": {
@@ -83,7 +83,7 @@
   "keyboard": {
     "shortcuts": "Keyboard Shortcuts",
     "help": "⌨️ Available keyboard shortcuts:",
-    "sign": "Sign AppImage",
+    "sign": "Sign Appimage",
     "download": "Download result",
     "reset": "Start new signing",
     "theme": "Toggle dark/light mode",

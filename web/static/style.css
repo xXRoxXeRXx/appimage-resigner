@@ -804,11 +804,40 @@ details[open] summary {
 }
 
 .progress-text {
-    color: white;
-    font-weight: 700;
-    font-size: 13px;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    letter-spacing: 0.3px;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 16px;
+    margin: 0;
+    text-align: center;
+}
+
+/* Loading Spinner */
+.spinner-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px 20px;
+    gap: 20px;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--border-light);
+    border-top: 4px solid var(--global--color-ionos-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+[data-theme="dark"] .spinner {
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top: 4px solid var(--global--color-ionos-blue);
 }
 
 /* Messages */
