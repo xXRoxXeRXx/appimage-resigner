@@ -51,6 +51,16 @@ document.addEventListener('DOMContentLoaded', () => {
     if (themeToggle) {
         themeToggle.addEventListener('click', toggleDarkMode);
     }
+    
+    // Add event listener to help button
+    const helpButton = document.getElementById('help-button');
+    if (helpButton) {
+        helpButton.addEventListener('click', () => {
+            if (typeof keyboard !== 'undefined') {
+                keyboard.showHelp();
+            }
+        });
+    }
 });
 
 let sessionId = null;

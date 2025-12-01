@@ -203,17 +203,34 @@
   - [ ] Shell-Completion
 
 ### UI/UX Improvements
-- [ ] **Keyboard Shortcuts**
-  - [ ] Strg+V für Paste
-  - [ ] Strg+Z für Undo
-  - [ ] ESC für Cancel
-  - [ ] Enter für Submit
+- [x] **Toast Notifications** ✅ *Abgeschlossen: 01.12.2025*
+  - [x] ToastManager-Klasse erstellt (~170 Zeilen)
+  - [x] Ersetze alert() durch moderne Toast Notifications
+  - [x] Success/Error/Info/Warning/Confirm Typen
+  - [x] Auto-dismiss nach 5-7 Sekunden (konfigurierbar)
+  - [x] Stack-Management für mehrere Notifications
+  - [x] Smooth Slide-in/out Animationen
+  - [x] Dark Mode Support mit Media Queries
+  - [x] Responsive Design (Mobile: von oben)
+  - [x] 10 alert()-Calls ersetzt
+  - [x] Success-Toasts für Uploads & Signing
+  - [x] toast.css (~370 Zeilen) mit allen Styles
+  - [x] Close-Button & Accessibility
 
-- [ ] **Toast Notifications**
-  - [ ] Ersetze `alert()` durch Toast
-  - [ ] Success/Error/Info Notifications
-  - [ ] Auto-dismiss nach 5 Sekunden
-  - [ ] Stack für mehrere Notifications
+- [x] **Keyboard Shortcuts** ✅ *Abgeschlossen: 01.12.2025*
+  - [x] KeyboardManager-Klasse erstellt (~300 Zeilen)
+  - [x] Strg+S zum Signieren
+  - [x] Strg+D zum Download
+  - [x] Strg+R zum Reset/Neu starten
+  - [x] Strg+T zum Theme wechseln
+  - [x] Strg+H oder F1 für Hilfe anzeigen
+  - [x] ESC zum Abbrechen/Zurücksetzen
+  - [x] Enter in Passphrase-Feld zum Signieren
+  - [x] Intelligentes Input-Field Handling
+  - [x] Visual Indicators (Keyboard Hints auf Buttons)
+  - [x] Help-Button in UI (⌨️ Icon)
+  - [x] Kontextabhängige Shortcuts
+  - [x] Global verfügbar über `window.keyboard`
 
 - [ ] **Mobile-Responsive Design**
   - [ ] Media Queries optimieren
@@ -227,16 +244,6 @@
   - [ ] Englisch (EN)
   - [ ] Language Switcher
   - [ ] Locale Storage
-
-- [ ] **Recent Files Liste**
-  - [ ] LocalStorage für History
-  - [ ] Letzte 10 Dateien anzeigen
-  - [ ] Quick-Access zum erneuten Signieren
-
-- [ ] **Undo/Redo**
-  - [ ] Action History
-  - [ ] Undo/Redo Buttons
-  - [ ] State Management
 
 ### Performance Optimizations
 - [ ] **Streaming Upload**

@@ -22,8 +22,13 @@
 
     <div class="container">
         <!-- Dark Mode Toggle -->
-        <button class="theme-toggle" id="theme-toggle" title="Dark/Light Mode wechseln">
+        <button class="theme-toggle" id="theme-toggle" title="Dark/Light Mode wechseln (Strg+T)">
             <span id="theme-icon">🌙</span>
+        </button>
+
+        <!-- Keyboard Shortcuts Help Button -->
+        <button class="help-button" id="help-button" title="Tastaturkürzel anzeigen (Strg+H oder F1)">
+            <span>⌨️</span>
         </button>
 
         <header>
@@ -120,9 +125,10 @@
                     <h2>Signieren</h2>
                 </div>
                 
-                <button class="btn-primary" id="sign-button">
+                <button class="btn-primary" id="sign-button" title="Tastenkürzel: Strg+S">
                     <span class="btn-icon">✍️</span>
                     AppImage signieren
+                    <span class="keyboard-hint">Strg+S</span>
                 </button>
 
                 <div class="progress" id="progress" style="display: none;">
@@ -193,6 +199,7 @@
     </div>
 
     <script src="/static/toast.js"></script>
+    <script src="/static/keyboard.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>
