@@ -540,7 +540,52 @@ if __name__ == "__main__":
 
 ## JavaScript/Node.js Integration
 
-### Example 1: Sign AppImage (Node.js)
+### Example 1: Chunked Upload (Browser)
+
+```javascript
+// Using the ChunkedUploader class
+const uploader = new ChunkedUploader({
+    chunkSize: 5 * 1024 * 1024,  // 5MB chunks
+    maxRetries: 3,
+    parallelUploads: 3,
+    onProgress: (progress) => {
+        console.log(`Progress: ${progress.progress.toFixed(1)}%`);
+        console.log(`Speed: ${uploader.formatSpeed(progress.speed)}`);
+        console.log(`ETA: ${uploader.formatETA(progress.eta)}`);
+        
+        // Update UI
+        document.getElementById('progress-bar').style.width = `${progress.progress}%`;
+        document.getElementById('progress-text').textContent = 
+            `${progress.uploadedChunks}/${progress.totalChunks} chunks`;
+    },
+    onComplete: (result) => {
+        console.log('Upload complete!', result);
+        alert(`File uploaded: ${result.filename}`);
+    },
+    onError: (error) => {
+        console.error('Upload failed:', error);
+        alert(`Error: ${error.message}`);
+    }
+});
+
+// Upload large AppImage
+const fileInput = document.getElementById('file-input');
+const sessionId = 'your-session-id'; // Get from session create
+
+fileInput.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    
+    if (file.size > 50 * 1024 * 1024) {
+        // Use chunked upload for files > 50MB
+        await uploader.uploadFile(file, sessionId, 'appimage');
+    } else {
+        // Use regular upload for small files
+        await regularUpload(file, sessionId);
+    }
+});
+```
+
+### Example 2: Sign AppImage (Node.js)
 
 ```javascript
 const axios = require('axios');
@@ -614,7 +659,87 @@ signAppImage(
 });
 ```
 
-### Example 2: React Component
+### Example 3: Chunked Upload (Node.js)
+
+```javascript
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+const crypto = require('crypto');
+
+async function uploadLargeFile(filePath, sessionId, fileType = 'appimage') {
+    const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+    const fileStats = fs.statSync(filePath);
+    const totalSize = fileStats.size;
+    const totalChunks = Math.ceil(totalSize / CHUNK_SIZE);
+    
+    console.log(`File size: ${(totalSize / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`Total chunks: ${totalChunks}`);
+    
+    // 1. Initialize upload
+    const initForm = new FormData();
+    initForm.append('session_id', sessionId);
+    initForm.append('filename', path.basename(filePath));
+    initForm.append('total_size', totalSize);
+    initForm.append('file_type', fileType);
+    
+    const initResponse = await axios.post(
+        `${API_BASE}/api/upload/init`,
+        initForm,
+        { headers: initForm.getHeaders() }
+    );
+    
+    console.log(`✓ Upload initialized`);
+    
+    // 2. Upload chunks
+    const fileStream = fs.createReadStream(filePath, { highWaterMark: CHUNK_SIZE });
+    let chunkNumber = 0;
+    
+    for await (const chunk of fileStream) {
+        // Calculate checksum
+        const checksum = crypto.createHash('md5').update(chunk).digest('hex');
+        
+        // Upload chunk
+        const chunkForm = new FormData();
+        chunkForm.append('chunk_number', chunkNumber);
+        chunkForm.append('checksum', checksum);
+        chunkForm.append('chunk', chunk);
+        
+        const chunkResponse = await axios.post(
+            `${API_BASE}/api/upload/chunk/${sessionId}`,
+            chunkForm,
+            { headers: chunkForm.getHeaders() }
+        );
+        
+        console.log(`✓ Chunk ${chunkNumber + 1}/${totalChunks} (${chunkResponse.data.progress.toFixed(1)}%)`);
+        chunkNumber++;
+    }
+    
+    // 3. Complete upload
+    const completeForm = new FormData();
+    completeForm.append('file_type', fileType);
+    
+    const completeResponse = await axios.post(
+        `${API_BASE}/api/upload/complete/${sessionId}`,
+        completeForm,
+        { headers: completeForm.getHeaders() }
+    );
+    
+    console.log(`✓ Upload complete: ${completeResponse.data.filename}`);
+    return completeResponse.data;
+}
+
+// Usage
+(async () => {
+    const sessionResponse = await axios.post(`${API_BASE}/api/session/create`);
+    const sessionId = sessionResponse.data.session_id;
+    
+    await uploadLargeFile('large-app.AppImage', sessionId, 'appimage');
+    console.log('✅ Done!');
+})();
+```
+
+### Example 4: React Component
 
 ```jsx
 import React, { useState } from 'react';

@@ -279,7 +279,185 @@ Upload an external .asc signature file for verification.
 
 ---
 
+## Chunked/Streaming Upload
+
+For large files (>50MB recommended), use chunked upload for better reliability and resume capability.
+
+### POST `/api/upload/init`
+
+Initialize a chunked upload session.
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+- `session_id` (string, required) - Signing session UUID
+- `filename` (string, required) - Original filename
+- `total_size` (integer, required) - Total file size in bytes
+- `file_type` (string, optional, default: "appimage") - File type (appimage, key, signature)
+
+**Response:** `200 OK`
+
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "total_chunks": 42,
+  "chunk_size": 5242880,
+  "upload_url": "/api/upload/chunk/550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST "http://localhost:8000/api/upload/init" \
+  -F "session_id=550e8400-e29b-41d4-a716-446655440000" \
+  -F "filename=large-app.AppImage" \
+  -F "total_size=220200960" \
+  -F "file_type=appimage"
+```
+
+**Notes:**
+- Default chunk size: 5MB
+- Maximum chunk size: 10MB
+- Calculates total number of chunks needed
+
+---
+
+### POST `/api/upload/chunk/{session_id}`
+
+Upload a single file chunk.
+
+**Path Parameters:**
+- `session_id` (string) - Upload session ID
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+- `chunk_number` (integer, required) - Chunk number (0-indexed)
+- `checksum` (string, optional) - MD5/SHA-256 checksum for verification
+- `chunk` (file, required) - Chunk binary data
+
+**Response:** `200 OK`
+
+```json
+{
+  "status": "chunk_uploaded",
+  "chunk_number": 15,
+  "uploaded_chunks": 16,
+  "total_chunks": 42,
+  "progress": 38.1,
+  "complete": false
+}
+```
+
+**Example:**
+
+```bash
+# Upload chunk 0
+curl -X POST "http://localhost:8000/api/upload/chunk/550e8400-e29b-41d4-a716-446655440000" \
+  -F "chunk_number=0" \
+  -F "checksum=d41d8cd98f00b204e9800998ecf8427e" \
+  -F "chunk=@chunk_0000"
+```
+
+**Notes:**
+- Chunks can be uploaded in any order
+- Automatic retry on network failure (3 attempts)
+- Checksum verification prevents corruption
+- Parallel upload supported (up to 3 concurrent chunks)
+
+---
+
+### POST `/api/upload/complete/{session_id}`
+
+Complete chunked upload and merge chunks into final file.
+
+**Path Parameters:**
+- `session_id` (string) - Upload session ID
+
+**Content-Type:** `multipart/form-data`
+
+**Form Data:**
+- `file_type` (string, optional, default: "appimage") - File type
+
+**Response:** `200 OK` (for AppImage)
+
+```json
+{
+  "status": "success",
+  "filename": "550e8400-e29b-41d4-a716-446655440000_large-app.AppImage",
+  "size": 220200960,
+  "signature_info": {
+    "has_signature": false,
+    "signature_type": null,
+    "digest_algo": null,
+    "key_id": null
+  }
+}
+```
+
+**Example:**
+
+```bash
+curl -X POST "http://localhost:8000/api/upload/complete/550e8400-e29b-41d4-a716-446655440000" \
+  -F "file_type=appimage"
+```
+
+**Notes:**
+- Validates all chunks are uploaded before merging
+- Performs AppImage validation (ELF header, format)
+- Automatically cleans up chunk files
+- Returns signature info if present
+
+**Error Responses:**
+
+**400 Bad Request** - Incomplete upload
+
+```json
+{
+  "detail": "Upload incomplete. Missing 3 chunks"
+}
+```
+
+---
+
+### GET `/api/upload/status/{session_id}`
+
+Get status of chunked upload.
+
+**Path Parameters:**
+- `session_id` (string) - Upload session ID
+
+**Response:** `200 OK`
+
+```json
+{
+  "session_id": "550e8400-e29b-41d4-a716-446655440000",
+  "filename": "large-app.AppImage",
+  "total_size": 220200960,
+  "uploaded_chunks": 28,
+  "total_chunks": 42,
+  "progress": 66.7,
+  "completed": false,
+  "started_at": "2025-12-01T10:30:00.123456"
+}
+```
+
+**Example:**
+
+```bash
+curl "http://localhost:8000/api/upload/status/550e8400-e29b-41d4-a716-446655440000"
+```
+
+**Use Cases:**
+- Progress tracking in UI
+- Resume upload after disconnect
+- Verify upload completion
+
+---
+
 ## Signing Operations
+````
 
 ### POST `/api/sign`
 
@@ -306,7 +484,7 @@ Sign the uploaded AppImage.
 ```bash
 curl -X POST http://localhost:8000/api/sign \
   -F "session_id=550e8400-e29b-41d4-a716-446655440000" \
-  -F "key_fingerprint=FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3" \
+  -F "key_fingerprint=A1B2C3D4E5F6789012345678901234567890ABCD" \
   -F "passphrase=my-secret-passphrase" \
   -F "embed_signature=true"
 ```
@@ -503,12 +681,12 @@ curl -X POST http://localhost:8000/api/keys/import \
 {
   "success": true,
   "message": "Key imported successfully",
-  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+  "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD",
   "key_data": {
-    "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
-    "keyid": "E9843DAD1053E5C3",
-    "name": "IONOS SE",
-    "email": "info@ionos.de",
+    "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD",
+    "keyid": "901234567890ABCD",
+    "name": "John Doe",
+    "email": "john.doe@example.com",
     "type": "RSA",
     "length": "3072",
     "algo": "RSA",
@@ -552,10 +730,10 @@ List all GPG keys in the keyring.
 {
   "public_keys": [
     {
-      "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
-      "keyid": "E9843DAD1053E5C3",
-      "name": "IONOS SE",
-      "email": "info@ionos.de",
+      "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD",
+      "keyid": "901234567890ABCD",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
       "type": "RSA",
       "length": "3072",
       "algo": "RSA",
@@ -567,10 +745,10 @@ List all GPG keys in the keyring.
   ],
   "secret_keys": [
     {
-      "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
-      "keyid": "E9843DAD1053E5C3",
-      "name": "IONOS SE",
-      "email": "info@ionos.de",
+      "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD",
+      "keyid": "901234567890ABCD",
+      "name": "John Doe",
+      "email": "john.doe@example.com",
       "type": "RSA",
       "length": "3072",
       "algo": "RSA",
@@ -602,17 +780,17 @@ Get detailed information about a specific key.
 **Example Request:**
 
 ```bash
-curl http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3
+curl http://localhost:8000/api/keys/A1B2C3D4E5F6789012345678901234567890ABCD
 ```
 
 **Response:** `200 OK`
 
 ```json
 {
-  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
-  "keyid": "E9843DAD1053E5C3",
-  "name": "IONOS SE",
-  "email": "info@ionos.de",
+  "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD",
+  "keyid": "901234567890ABCD",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
   "type": "RSA",
   "length": "3072",
   "algo": "RSA",
@@ -621,7 +799,7 @@ curl http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3
   "trust": "u",
   "is_secret": true,
   "uids": [
-    "IONOS SE (Key for Linux Appimage signing) <info@ionos.de>"
+    "John Doe (My signing key) <john.doe@example.com>"
   ]
 }
 ```
@@ -650,10 +828,10 @@ Delete a key from the keyring.
 
 ```bash
 # Delete public key only
-curl -X DELETE http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3
+curl -X DELETE http://localhost:8000/api/keys/A1B2C3D4E5F6789012345678901234567890ABCD
 
 # Delete both public and secret key
-curl -X DELETE "http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3?delete_secret=true"
+curl -X DELETE "http://localhost:8000/api/keys/A1B2C3D4E5F6789012345678901234567890ABCD?delete_secret=true"
 ```
 
 **Response:** `200 OK`
@@ -662,7 +840,7 @@ curl -X DELETE "http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1
 {
   "success": true,
   "message": "Key deleted successfully",
-  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3"
+  "fingerprint": "A1B2C3D4E5F6789012345678901234567890ABCD"
 }
 ```
 
