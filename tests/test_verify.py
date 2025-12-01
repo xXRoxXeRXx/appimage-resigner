@@ -1,7 +1,6 @@
 """
 Basic Verification Tests
 """
-from pathlib import Path
 from src.verify import AppImageVerifier
 
 
