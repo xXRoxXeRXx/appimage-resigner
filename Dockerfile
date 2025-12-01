@@ -38,10 +38,10 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 # Ensure permissions are correct after copy (in case web/ contains logs/)
 RUN chown -R appuser:appuser uploads signed temp_keys logs
 
-# Switch to non-root user
-USER appuser
+# NOTE: Do NOT switch to appuser here - entrypoint needs root for chown
+# The entrypoint script will switch to appuser after fixing permissions
 
-# Set entrypoint
+# Set entrypoint (runs as root, then drops to appuser)
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Expose port
