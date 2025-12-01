@@ -123,7 +123,13 @@ class AppImageResigner:
             # Check if there's already an embedded signature and remove it
             if b'-----BEGIN PGP SIGNATURE-----' in original_data:
                 sig_start = original_data.rfind(b'-----BEGIN PGP SIGNATURE-----')
-                original_data = original_data[:sig_start]
+                
+                # Trim whitespace/newlines before the signature to get clean data
+                data_end = sig_start
+                while data_end > 0 and original_data[data_end - 1:data_end] in (b'\n', b'\r', b' ', b'\t'):
+                    data_end -= 1
+                
+                original_data = original_data[:data_end]
                 print(f"ℹ Removed existing embedded signature")
             
             # Create a temporary file with clean data for signing
@@ -146,8 +152,12 @@ class AppImageResigner:
                 if signed_data.status == 'signature created':
                     signature_text = str(signed_data)
                     
-                    # Write signature to .asc file
-                    with open(output_path, 'w') as sig_file:
+                    # Normalize line endings to Unix style (\n) for consistency
+                    # This ensures the signature works across Windows and Linux
+                    signature_text = signature_text.replace('\r\n', '\n').replace('\r', '\n')
+                    
+                    # Write signature to .asc file with Unix line endings
+                    with open(output_path, 'w', newline='') as sig_file:
                         sig_file.write(signature_text)
                     
                     print(f"✓ Successfully signed: {appimage_path}")
@@ -161,6 +171,7 @@ class AppImageResigner:
                                 f.write(original_data)
                                 # Use \n for line ending (Unix style) for consistency
                                 f.write(b'\n')
+                                # Encode with normalized line endings
                                 f.write(signature_text.encode('utf-8'))
                             print(f"✓ Signature embedded in: {appimage_path}")
                         except Exception as e:

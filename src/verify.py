@@ -159,18 +159,27 @@ class AppImageVerifier:
                     # The signature might be preceded by newline(s) that weren't part of the signed data
                     # We need to find where the actual signed data ends
                     data_end = sig_start
+                    
                     # Skip backwards over any whitespace/newlines before the signature
+                    # Support both Windows (\r\n) and Unix (\n) line endings
                     while data_end > 0 and content[data_end - 1:data_end] in (b'\n', b'\r', b' ', b'\t'):
                         data_end -= 1
                     
                     # Extract signature block
-                    sig_data = content[sig_start:].decode('utf-8', errors='ignore')
+                    sig_data_bytes = content[sig_start:]
+                    
+                    # IMPORTANT: Normalize line endings in signature to \n (Unix style)
+                    # This ensures consistency regardless of how the signature was created
+                    sig_data = sig_data_bytes.decode('utf-8', errors='ignore')
+                    sig_data = sig_data.replace('\r\n', '\n').replace('\r', '\n')
                     
                     # Get the data before the signature (this is what was signed)
                     data_before_sig = content[:data_end]
                     
                     print(f"🔍 Data size before signature: {len(data_before_sig)} bytes (trimmed from {sig_start})")
-                    print(f"🔍 Signature size: {len(sig_data)} bytes")
+                    print(f"🔍 Signature size: {len(sig_data)} bytes (normalized line endings)")
+                    print(f"🔍 Last 20 bytes of data: {data_before_sig[-20:].hex()}")
+                    print(f"🔍 First 50 chars of signature: {sig_data[:50]}")
                     
                     # Save to temporary files for verification
                     import tempfile
@@ -178,7 +187,8 @@ class AppImageVerifier:
                         data_file.write(data_before_sig)
                         data_path = data_file.name
                     
-                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.asc') as sig_file:
+                    with tempfile.NamedTemporaryFile(mode='w', delete=False, suffix='.asc', newline='') as sig_file:
+                        # Write with Unix line endings for GPG compatibility
                         sig_file.write(sig_data)
                         sig_path = sig_file.name
                     
