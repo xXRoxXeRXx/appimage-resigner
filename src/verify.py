@@ -533,10 +533,10 @@ def parse_signature_metadata(signature_data: str) -> dict:
                 idx += 1
 
                 if length_byte < 192:
-                    packet_length = length_byte
+                    _ = length_byte  # noqa: F841
                 elif length_byte < 224:
                     if idx < len(decoded):
-                        packet_length = ((length_byte - 192) << 8) + decoded[idx] + 192
+                        _ = ((length_byte - 192) << 8) + decoded[idx] + 192  # noqa: F841
                         idx += 1
         else:
             # Old format packet
