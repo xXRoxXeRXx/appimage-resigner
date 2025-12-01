@@ -52,6 +52,10 @@ temp_keys/
 *secret*.asc
 privatekey*.asc
 secretkey*.asc
+# DO NOT COMMIT REVOCATION CERTIFICATES!
+*REVOCATION*.asc
+*revoke*.asc
+*.rev
 
 # Test files
 *.appimage.test
