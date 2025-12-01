@@ -20,18 +20,16 @@ class TestVerifyBasics:
 
         # First sign the AppImage
         resigner = AppImageResigner(gpg_home=gpg_instance.gnupghome)
-        signed_path = temp_dir / "signed.AppImage"
 
         resigner.sign_appimage(
             str(sample_appimage),
-            generated_gpg_key,
-            str(signed_path),
+            key_id=generated_gpg_key,
             passphrase=test_key_data["passphrase"]
         )
 
         # Now verify it
         verifier = AppImageVerifier(gpg_home=gpg_instance.gnupghome)
-        result = verifier.verify_signature(str(signed_path))
+        result = verifier.verify_signature(str(sample_appimage))
 
         assert result["valid"] is True
 
@@ -41,4 +39,4 @@ class TestVerifyBasics:
         result = verifier.verify_signature(str(sample_appimage))
 
         # Should not be valid (no signature)
-        assert result["valid"] is False
+        assert result.get("valid") is False

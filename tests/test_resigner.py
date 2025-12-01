@@ -12,14 +12,8 @@ class TestResigerBasics:
         """Test signature removal"""
         resigner = AppImageResigner()
 
-        output_path = temp_dir / "unsigned.AppImage"
-        result = resigner.remove_signature(
-            str(sample_appimage),
-            str(output_path)
-        )
-
-        assert result["success"] is True
-        assert Path(output_path).exists()
+        result = resigner.remove_signature(str(sample_appimage))
+        assert result is True
 
     def test_sign_appimage(
         self,
@@ -32,17 +26,13 @@ class TestResigerBasics:
         """Test AppImage signing"""
         resigner = AppImageResigner(gpg_home=gpg_instance.gnupghome)
 
-        output_path = temp_dir / "signed.AppImage"
+        output_path = temp_dir / "signed.AppImage.asc"
         result = resigner.sign_appimage(
             str(sample_appimage),
-            generated_gpg_key,
-            str(output_path),
-            passphrase=test_key_data["passphrase"]
+            key_id=generated_gpg_key,
+            passphrase=test_key_data["passphrase"],
+            output_path=str(output_path)
         )
 
-        assert result["success"] is True
+        assert result is True
         assert Path(output_path).exists()
-
-        # Check signature file created
-        sig_path = Path(str(output_path) + ".asc")
-        assert sig_path.exists()
