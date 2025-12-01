@@ -3,12 +3,52 @@ version: '3.8'
 services:
   appimage-resigner:
     build: .
+    image: appimage-resigner:latest
+    container_name: appimage-resigner
+    restart: unless-stopped
+    
+    # Port mapping
     ports:
-      - "8000:8000"
+      - "${APP_PORT:-8000}:8000"
+    
+    # Volume mounts
     volumes:
       - ./uploads:/app/uploads
       - ./signed:/app/signed
       - ./temp_keys:/app/temp_keys
+      - ./logs:/app/logs
+    
+    # Environment variables
     environment:
       - PYTHONUNBUFFERED=1
-    restart: unless-stopped
+      - PYTHONDONTWRITEBYTECODE=1
+      - MAX_UPLOAD_SIZE_MB=${MAX_UPLOAD_SIZE_MB:-500}
+      - SESSION_CLEANUP_HOURS=${SESSION_CLEANUP_HOURS:-24}
+      - LOG_LEVEL=${LOG_LEVEL:-INFO}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:-*}
+      - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-false}
+    
+    # Health check (uses Dockerfile HEALTHCHECK)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health').read()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    
+    # Logging
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
