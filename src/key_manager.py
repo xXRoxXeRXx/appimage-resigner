@@ -5,39 +5,83 @@ Manages GPG keys for AppImage signing.
 """
 
 import sys
+import os
 import argparse
-import gnupg
+import gnupg  # type: ignore[import]
 from pathlib import Path
+from typing import Optional, List, Dict, Any
+import shutil
+
+
+def find_gpg_binary() -> Optional[str]:
+    """Find GPG binary on the system.
+    
+    Returns:
+        Path to GPG binary if found, None otherwise
+    """
+    # Common GPG locations on Windows
+    gpg_paths = [
+        r"C:\Program Files (x86)\GnuPG\bin\gpg.exe",
+        r"C:\Program Files\GnuPG\bin\gpg.exe",
+        r"C:\Program Files (x86)\Gpg4win\bin\gpg.exe",
+        r"C:\Program Files\Gpg4win\bin\gpg.exe",
+    ]
+    
+    # Check if gpg is in PATH
+    gpg_in_path = shutil.which('gpg')
+    if gpg_in_path:
+        return gpg_in_path
+    
+    # Check common locations
+    for path in gpg_paths:
+        if os.path.exists(path):
+            return path
+    
+    return None
 
 
 class GPGKeyManager:
     """Class for managing GPG keys."""
     
-    def __init__(self, gpg_home=None):
+    gpg: gnupg.GPG
+    
+    def __init__(self, gpg_home: Optional[str] = None) -> None:
         """
         Initialize the key manager.
         
         Args:
-            gpg_home (str): Path to GPG home directory. Defaults to ~/.gnupg
+            gpg_home: Path to GPG home directory. Defaults to ~/.gnupg
         """
-        self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
+        gpg_binary = find_gpg_binary()
+        if gpg_binary:
+            self.gpg = gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary) if gpg_home else gnupg.GPG(gpgbinary=gpg_binary)
+        else:
+            self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
     
-    def generate_key(self, name, email, comment="", key_type="RSA", 
-                    key_length=4096, expire_date=0, passphrase=None):
+    def generate_key(
+        self,
+        name: str,
+        email: str,
+        comment: str = "",
+        key_type: str = "RSA",
+        key_length: int = 4096,
+        expire_date: int = 0,
+        passphrase: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Generate a new GPG key pair.
         
         Args:
-            name (str): Name for the key (e.g., "Company AppImage Signing")
-            email (str): Email address for the key
-            comment (str): Optional comment
-            key_type (str): Key type (RSA, DSA, etc.)
-            key_length (int): Key length in bits (2048, 4096)
-            expire_date (int): Expiration in days (0 = never expires)
-            passphrase (str): Passphrase to protect the private key
+            name: Name for the key (e.g., "Company AppImage Signing")
+            email: Email address for the key
+            comment: Optional comment
+            key_type: Key type (RSA, DSA, etc.)
+            key_length: Key length in bits (2048, 4096)
+            expire_date: Expiration in days (0 = never expires)
+            passphrase: Passphrase to protect the private key
         
         Returns:
-            dict: Key generation result with fingerprint
+            Key generation result with fingerprint
         """
         input_data = self.gpg.gen_key_input(
             name_real=name,
@@ -68,25 +112,25 @@ class GPGKeyManager:
                 'error': 'Key generation failed'
             }
     
-    def list_keys(self, secret=False):
+    def list_keys(self, secret: bool = False) -> List[Dict[str, Any]]:
         """
         List all GPG keys.
         
         Args:
-            secret (bool): If True, list private keys; otherwise public keys
+            secret: If True, list private keys; otherwise public keys
         
         Returns:
-            list: List of key dictionaries
+            List of key dictionaries
         """
         keys = self.gpg.list_keys(secret=secret)
         return keys
     
-    def print_keys(self, secret=False):
+    def print_keys(self, secret: bool = False) -> None:
         """
         Pretty print all GPG keys.
         
         Args:
-            secret (bool): If True, list private keys; otherwise public keys
+            secret: If True, list private keys; otherwise public keys
         """
         keys = self.list_keys(secret=secret)
         
@@ -112,16 +156,16 @@ class GPGKeyManager:
             
             print("-" * 80)
     
-    def export_public_key(self, key_id, output_file):
+    def export_public_key(self, key_id: str, output_file: str) -> bool:
         """
         Export a public key to a file (ASCII-armored).
         
         Args:
-            key_id (str): Key ID or fingerprint to export
-            output_file (str): Output file path
+            key_id: Key ID or fingerprint to export
+            output_file: Output file path
         
         Returns:
-            bool: True if export was successful
+            True if export was successful
         """
         ascii_armored_key = self.gpg.export_keys(key_id)
         
@@ -135,19 +179,24 @@ class GPGKeyManager:
             print(f"✗ Failed to export public key for: {key_id}")
             return False
     
-    def export_private_key(self, key_id, output_file, passphrase=None):
+    def export_private_key(
+        self,
+        key_id: str,
+        output_file: str,
+        passphrase: Optional[str] = None
+    ) -> bool:
         """
         Export a private key to a file (ASCII-armored).
         
         WARNING: Handle private keys with extreme care!
         
         Args:
-            key_id (str): Key ID or fingerprint to export
-            output_file (str): Output file path
-            passphrase (str): Passphrase for the private key
+            key_id: Key ID or fingerprint to export
+            output_file: Output file path
+            passphrase: Passphrase for the private key
         
         Returns:
-            bool: True if export was successful
+            True if export was successful
         """
         ascii_armored_key = self.gpg.export_keys(
             key_id, 
@@ -166,15 +215,15 @@ class GPGKeyManager:
             print(f"✗ Failed to export private key for: {key_id}")
             return False
     
-    def import_key(self, key_file):
+    def import_key(self, key_file: str) -> bool:
         """
         Import a GPG key from a file.
         
         Args:
-            key_file (str): Path to the key file
+            key_file: Path to the key file
         
         Returns:
-            bool: True if import was successful
+            True if import was successful
         """
         key_path = Path(key_file)
         
@@ -196,17 +245,22 @@ class GPGKeyManager:
             print("✗ Failed to import key")
             return False
     
-    def generate_revocation_cert(self, key_id, output_file, passphrase=None):
+    def generate_revocation_cert(
+        self,
+        key_id: str,
+        output_file: str,
+        passphrase: Optional[str] = None
+    ) -> bool:
         """
         Generate a revocation certificate for a key.
         
         Args:
-            key_id (str): Key ID or fingerprint
-            output_file (str): Output file path
-            passphrase (str): Passphrase for the private key
+            key_id: Key ID or fingerprint
+            output_file: Output file path
+            passphrase: Passphrase for the private key
         
         Returns:
-            bool: True if generation was successful
+            True if generation was successful
         """
         # Note: python-gnupg doesn't directly support revocation cert generation
         # This would typically be done via command line: gpg --gen-revoke
@@ -215,7 +269,7 @@ class GPGKeyManager:
         return False
 
 
-def main():
+def main() -> None:
     """Command-line interface for GPG key management."""
     parser = argparse.ArgumentParser(
         description="Manage GPG keys for AppImage signing"

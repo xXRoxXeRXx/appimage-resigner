@@ -1,7 +1,49 @@
-# Python dependencies for AppImage Re-Signer
+# ==============================================================================
+# AppImage Re-Signer - Python Dependencies
+# ==============================================================================
 
-# Core GPG library for Python
-python-gnupg>=0.5.0
+# ------------------------------------------------------------------------------
+# Core Dependencies - Required for GPG Operations
+# ------------------------------------------------------------------------------
+python-gnupg>=0.5.0,<1.0.0          # GPG wrapper for Python
 
-# For better CLI output (optional but recommended)
-colorama>=0.4.6
+# ------------------------------------------------------------------------------
+# Web Framework - FastAPI Backend
+# ------------------------------------------------------------------------------
+fastapi>=0.115.0,<1.0.0             # Modern web framework
+uvicorn[standard]>=0.32.0,<1.0.0    # ASGI server with WebSockets support
+python-multipart>=0.0.9,<1.0.0      # File upload support for FastAPI
+pydantic>=2.0.0,<3.0.0              # Data validation (FastAPI dependency)
+pydantic-settings>=2.0.0,<3.0.0     # Environment variable management
+
+# ------------------------------------------------------------------------------
+# Background Tasks & Scheduling
+# ------------------------------------------------------------------------------
+apscheduler>=3.10.0,<4.0.0          # Background job scheduler for cleanup
+
+# ------------------------------------------------------------------------------
+# Async I/O Operations
+# ------------------------------------------------------------------------------
+aiofiles>=24.1.0,<25.0.0            # Async file handling
+
+# ------------------------------------------------------------------------------
+# Optional Dependencies - CLI & Development
+# ------------------------------------------------------------------------------
+colorama>=0.4.6,<1.0.0              # Colored terminal output (optional)
+
+# ------------------------------------------------------------------------------
+# Development & Testing (optional - install with: pip install -e ".[dev]")
+# ------------------------------------------------------------------------------
+# pytest>=7.0.0,<8.0.0              # Testing framework
+# pytest-asyncio>=0.21.0,<1.0.0     # Async test support
+# pytest-cov>=4.0.0,<5.0.0          # Code coverage
+# black>=23.0.0,<24.0.0             # Code formatter
+# flake8>=6.0.0,<7.0.0              # Linter
+# mypy>=1.0.0,<2.0.0                # Type checker
+
+# ------------------------------------------------------------------------------
+# Production Recommendations
+# ------------------------------------------------------------------------------
+# gunicorn>=21.0.0,<22.0.0          # Production WSGI server
+# python-dotenv>=1.0.0,<2.0.0       # .env file loading (pydantic-settings includes this)
+

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>AppImage Re-Signer - Web Interface</title>
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16px.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32px.png">
+    <link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48px.png">
+    
+    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/toast.css">
+</head>
+<body>
+    <!-- Logo Header - Outside Container, Above Container -->
+    <div style="max-width: 800px; width: 100%; margin: 0 auto 20px auto; padding: 0 20px;">
+        <img src="/static/logo_ionos.png" alt="IONOS Logo" style="max-width: 150px; height: auto;">
+    </div>
+
+    <div class="container">
+        <!-- Dark Mode Toggle -->
+        <button class="theme-toggle" id="theme-toggle" data-i18n-title="theme.toggleShortcut">
+            <span id="theme-icon">🌙</span>
+        </button>
+
+        <!-- Keyboard Shortcuts Help Button -->
+        <button class="help-button" id="help-button" data-i18n-title="help.button">
+            <span>⌨️</span>
+        </button>
+
+        <header>
+            <h1 data-i18n="app.title">🔐 AppImage Re-Signer</h1>
+            <p class="subtitle" data-i18n="app.subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
+        </header>
+
+        <main>
+            <!-- Step 1: Upload AppImage -->
+            <section class="card" id="step1">
+                <div class="step-header">
+                    <span class="step-number">1</span>
+                    <h2 data-i18n="step1.title">AppImage hochladen</h2>
+                </div>
+                
+                <div class="upload-area" id="appimage-drop-zone">
+                    <div class="upload-icon">📦</div>
+                    <p data-i18n="step1.dropzone">AppImage hier ablegen oder klicken zum Auswählen</p>
+                    <input type="file" id="appimage-input" accept=".AppImage" hidden>
+                    <div class="file-info" id="appimage-info" style="display: none;">
+                        <span class="filename"></span>
+                        <span class="filesize"></span>
+                    </div>
+                </div>
+
+                <!-- Original Signature Info -->
+                <div class="signature-info" id="original-signature" style="display: none;">
+                    <h4>📜 Signatur gefunden:</h4>
+                    <div id="original-signature-content"></div>
+                    <button class="btn-secondary" id="verify-signature-button" style="margin-top: 15px; display: none;">
+                        <span class="btn-icon">🔍</span>
+                        Signatur verifizieren
+                    </button>
+                </div>
+
+                <!-- Optional: Upload .asc signature file -->
+                <div class="upload-hint" style="margin-top: 1rem; display: none;" id="signature-upload-hint">
+                    <small>Optional: <a href="#" id="upload-signature-link">Signatur-Datei (.asc) hochladen</a> um die aktuelle Signatur zu prüfen</small>
+                    <input type="file" id="signature-input" accept=".asc" hidden>
+                </div>
+            </section>
+
+            <!-- Step 2: Upload Key or Enter Key ID -->
+            <section class="card" id="step2" style="opacity: 0.5; pointer-events: none;">
+                <div class="step-header">
+                    <span class="step-number">2</span>
+                    <h2 data-i18n="step2.title">GPG Key bereitstellen</h2>
+                </div>
+                
+                <div class="key-options">
+                    <div class="option-tabs">
+                        <button class="tab-button active" data-tab="upload" data-i18n="step2.privateKey">Key hochladen</button>
+                        <button class="tab-button" data-tab="keyid" data-i18n="step2.keyId">Key ID eingeben</button>
+                    </div>
+
+                    <div class="tab-content active" id="upload-tab">
+                        <div class="upload-area" id="key-drop-zone">
+                            <div class="upload-icon">🔑</div>
+                            <p data-i18n="step2.dropzone">GPG Private Key hier ablegen oder klicken</p>
+                            <input type="file" id="key-input" accept=".key,.gpg,.asc" hidden>
+                            <div class="file-info" id="key-info" style="display: none;">
+                                <span class="filename"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="keyid-tab">
+                        <div class="form-group">
+                            <label for="key-id-input" data-i18n="step2.keyId">Key ID:</label>
+                            <input type="text" id="key-id-input" data-i18n-placeholder="step2.keyIdHelp">
+                            <small data-i18n="step2.keyIdSystem">Key muss bereits im System GPG Keyring vorhanden sein</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="passphrase-input" data-i18n="step2.passphraseOptional">Passphrase (optional):</label>
+                    <input type="password" id="passphrase-input" data-i18n-placeholder="step2.passphraseHelp">
+                </div>
+
+                <div class="form-group">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="embed-signature" style="width: auto; margin: 0;">
+                        <span data-i18n="step2.embedSignature">Signatur in AppImage einbetten</span>
+                    </label>
+                    <small data-i18n="step2.embedSignatureHelp">Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur</small>
+                </div>
+            </section>
+
+            <!-- Step 3: Sign -->
+            <section class="card" id="step3" style="opacity: 0.5; pointer-events: none;">
+                <div class="step-header">
+                    <span class="step-number">3</span>
+                    <h2 data-i18n="step3.title">Signieren</h2>
+                </div>
+                
+                <button class="btn-primary" id="sign-button" data-i18n-title="theme.toggleShortcut">
+                    <span class="btn-icon">✍️</span>
+                    <span data-i18n="buttons.sign">AppImage signieren</span>
+                    <span class="keyboard-hint">Strg+S</span>
+                </button>
+
+                <div class="progress" id="progress" style="display: none;">
+                    <div class="progress-bar"></div>
+                    <p class="progress-text" data-i18n="step3.progress">Signierung läuft...</p>
+                </div>
+            </section>
+
+            <!-- Step 4: Results -->
+            <section class="card" id="step4" style="display: none;">
+                <div class="step-header">
+                    <span class="step-number">✓</span>
+                    <h2 data-i18n="step4.title">Ergebnis</h2>
+                </div>
+
+                <div class="result-success" id="result-success">
+                    <div class="success-icon">✅</div>
+                    <h3 data-i18n="step4.success">Signierung erfolgreich!</h3>
+                    
+                    <div class="verification-details" id="verification-details">
+                        <!-- Will be filled by JavaScript -->
+                    </div>
+
+                    <div class="download-buttons">
+                        <a href="#" class="btn-download btn-download-primary" id="download-zip">
+                            <span>📦</span>
+                            <span data-i18n="buttons.downloadZip">Beide als ZIP herunterladen</span>
+                        </a>
+                        <a href="#" class="btn-download" id="download-appimage">
+                            <span>📦</span>
+                            <span data-i18n="buttons.downloadAppImage">Signierte AppImage</span>
+                        </a>
+                        <a href="#" class="btn-download" id="download-signature">
+                            <span>🔐</span>
+                            <span data-i18n="buttons.downloadSignature">Signatur (.asc)</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="result-error" id="result-error" style="display: none;">
+                    <div class="error-icon">❌</div>
+                    <h3>Signierung fehlgeschlagen</h3>
+                    <p class="error-message" id="error-message"></p>
+                </div>
+
+                <button class="btn-secondary" id="reset-button">
+                    <span class="btn-icon">🔄</span>
+                    Neue Signierung starten
+                </button>
+            </section>
+        </main>
+
+        <footer>
+            <p>
+                <strong data-i18n="app.title">AppImage Re-Signer</strong> <span id="app-version" class="version-badge">v2.0.0</span>
+                <br>
+                <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank" data-i18n="footer.github">
+                    � GitHub
+                </a>
+                |
+                <a href="/health" target="_blank" data-i18n="footer.health" data-i18n-title="footer.health">
+                    ❤️ Health Status
+                </a>
+                <br>
+                <span style="opacity: 0.7;" data-i18n="footer.madeWith">Made with ❤️ and AI in Berlin 🚀</span>
+            </p>
+            
+            <!-- Language Selector Dropdown -->
+            <div class="language-selector">
+                <span class="language-icon">🌍</span>
+                <select id="language-select" class="language-dropdown" aria-label="Select Language">
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="en">🇬🇧 English</option>
+                </select>
+            </div>
+        </footer>
+    </div>
+
+    <script src="/static/toast.js"></script>
+    <script src="/static/i18n.js"></script>
+    <script src="/static/keyboard.js"></script>
+    <script src="/static/app.js"></script>
+</body>
+</html>
