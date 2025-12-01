@@ -116,26 +116,47 @@ Dockerfile muss `gnupg` installieren:
 RUN apt-get update && apt-get install -y --no-install-recommends gnupg
 ```
 
-### Problem 6: "Permission Denied" (Uploads/Signed)
+### Problem 6: "Permission Denied" (Uploads/Signed/Logs)
 **Symptom:**
 ```
 PermissionError: [Errno 13] Permission denied: '/app/uploads/...'
+PermissionError: [Errno 13] Permission denied: '/app/logs/appimage-resigner.log'
 ```
 
-**Lösung:**
-1. Prüfe User im Container:
-   ```bash
-   docker exec appimage-resigner whoami  # Sollte: appuser
-   ```
-2. Prüfe Berechtigungen:
-   ```bash
-   docker exec appimage-resigner ls -la /app/
-   ```
-3. Dockerfile sollte haben:
-   ```dockerfile
-   RUN mkdir -p uploads signed temp_keys logs && \
-       chown -R appuser:appuser uploads signed temp_keys logs
-   ```
+**Root Cause:**
+- Directories created AFTER copying code causes permission conflicts
+- COPY --chown doesn't preserve permissions for pre-existing directories
+
+**Solution:**
+Dockerfile must create directories BEFORE copying code:
+```dockerfile
+# CORRECT ORDER:
+# 1. Install dependencies
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# 2. Create directories FIRST
+RUN mkdir -p uploads signed temp_keys logs && \
+    chown -R appuser:appuser uploads signed temp_keys logs
+
+# 3. Copy code
+COPY --chown=appuser:appuser src/ ./src/
+COPY --chown=appuser:appuser web/ ./web/
+
+# 4. Re-ensure permissions after copy
+RUN chown -R appuser:appuser uploads signed temp_keys logs
+
+# 5. Switch to non-root user
+USER appuser
+```
+
+**Verification:**
+```bash
+docker exec appimage-resigner ls -la /app/logs/
+# Should show: drwxrwxrwx ... appuser appuser
+docker exec appimage-resigner touch /app/logs/test.txt
+# Should succeed without errors
+```
 
 ### Problem 7: "Module Not Found" (Python Import Error)
 **Symptom:**
