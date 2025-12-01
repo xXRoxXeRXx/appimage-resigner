@@ -343,7 +343,9 @@ async def upload_appimage(
         session.status = "appimage_uploaded"
 
         file_size_mb = len(content) / (1024 * 1024)
-        logger.info(f"AppImage uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB")
+        logger.info(
+            f"AppImage uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB"
+        )
 
         # Audit log: successful upload
         log_audit_event(
@@ -502,7 +504,9 @@ async def sign_appimage(
     try:
         # Priority 1: Use key_fingerprint if provided (from dropdown selection)
         if key_fingerprint:
-            logger.info(f"Using selected key from keyring | session_id={session_id} | fingerprint={key_fingerprint[:16]}...")
+            logger.info(
+                f"Using selected key from keyring | session_id={session_id} | fingerprint={key_fingerprint[:16]}..."
+            )
             key_id = key_fingerprint
 
         # Priority 2: Import key if uploaded and get fingerprint

@@ -545,7 +545,7 @@ def parse_signature_metadata(signature_data: str) -> dict:
 
             # Read length based on length_type
             if length_type == 0:
-                packet_length = decoded[idx] if idx < len(decoded) else 0
+                _ = decoded[idx] if idx < len(decoded) else 0  # noqa: F841
                 idx += 1
             elif length_type == 1:
                 _ = struct.unpack('>H', decoded[idx:idx+2])[0] if idx+1 < len(decoded) else 0
