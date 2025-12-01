@@ -1,0 +1,106 @@
+{
+  "app": {
+    "title": "AppImage Re-Signer",
+    "subtitle": "Sign your AppImages easily via the web"
+  },
+  "buttons": {
+    "sign": "Sign AppImage",
+    "download": "Download",
+    "downloadZip": "Download as ZIP",
+    "downloadAppImage": "Download AppImage",
+    "downloadSignature": "Download Signature",
+    "copyCommand": "Copy Command",
+    "newSigning": "New Signing"
+  },
+  "step1": {
+    "title": "Upload AppImage",
+    "dropzone": "Drop AppImage here or click to select",
+    "fileSelected": "File selected"
+  },
+  "step2": {
+    "title": "Upload GPG Key",
+    "dropzone": "Drop GPG key here or click",
+    "uploadMethod": "Upload Method",
+    "privateKey": "Private Key",
+    "keyId": "Key ID",
+    "passphrase": "Passphrase",
+    "passphraseOptional": "Passphrase (optional)",
+    "passphraseHelp": "Key passphrase if available",
+    "keyIdHelp": "GPG Key ID (e.g. ABCD1234)",
+    "embedSignature": "Embed signature in AppImage",
+    "embedSignatureHelp": "Creates both a .asc file and an embedded signature"
+  },
+  "step3": {
+    "title": "Sign",
+    "progress": "Signing in progress..."
+  },
+  "step4": {
+    "title": "Result",
+    "success": "Signing successful!",
+    "error": "Signing failed"
+  },
+  "verification": {
+    "title": "Signature Verification",
+    "valid": "Signature valid",
+    "invalid": "Signature invalid",
+    "warning": "Warning",
+    "signature": "Signature",
+    "signedBy": "Signed by",
+    "keyId": "Key ID",
+    "fingerprint": "Fingerprint",
+    "timestamp": "Timestamp",
+    "fileName": "Filename",
+    "fileSize": "File size"
+  },
+  "messages": {
+    "sessionError": "Error creating session. Please reload the page.",
+    "invalidFile": "Please select a .AppImage file.",
+    "uploadSuccess": "✓ AppImage uploaded successfully!",
+    "uploadError": "Upload failed: {error}",
+    "uploadFailed": "Upload failed. Please try again.",
+    "keyUploadSuccess": "✓ GPG key uploaded successfully!",
+    "keyUploadError": "Key upload failed: {error}",
+    "keyUploadFailed": "Key upload failed. Please try again.",
+    "signingSuccess": "✓ AppImage signed successfully!",
+    "signingStarted": "🔐 Signing started...",
+    "signingNotReady": "Please upload AppImage and GPG key first",
+    "downloadStarted": "⬇️ Download started...",
+    "copySuccess": "✓ Copied to clipboard!",
+    "copyFailed": "Copy failed. Please select and copy manually.",
+    "verificationError": "Verification failed: {error}",
+    "selectionReset": "Selection reset",
+    "appImageReset": "AppImage selection reset",
+    "keyReset": "Key selection reset"
+  },
+  "footer": {
+    "documentation": "📚 Documentation",
+    "api": "🔌 API",
+    "github": "💻 GitHub",
+    "health": "❤️ Health Status",
+    "madeWith": "Made with ❤️ and AI in Berlin 🚀"
+  },
+  "keyboard": {
+    "shortcuts": "Keyboard Shortcuts",
+    "help": "⌨️ Available keyboard shortcuts:",
+    "sign": "Sign AppImage",
+    "download": "Download result",
+    "reset": "Start new signing",
+    "theme": "Toggle dark/light mode",
+    "showHelp": "Show help",
+    "cancel": "Reset selection / Unfocus",
+    "submit": "Submit form / Sign",
+    "tip": "💡 Tip: Most shortcuts work even while typing!"
+  },
+  "theme": {
+    "toggle": "Toggle Dark/Light Mode",
+    "toggleShortcut": "Toggle Dark/Light Mode (Ctrl+T)"
+  },
+  "help": {
+    "button": "Show keyboard shortcuts (Ctrl+H or F1)"
+  },
+  "language": {
+    "select": "Select Language",
+    "de": "German",
+    "en": "English"
+  }
+}

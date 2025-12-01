@@ -251,12 +251,25 @@
   - [x] Progressive spacing (tight auf Mobile)
   - [x] ~300 Zeilen responsive CSS
 
-- [ ] **Internationalisierung**
-  - [ ] i18n Framework (i18next)
-  - [ ] Deutsch (DE)
-  - [ ] Englisch (EN)
-  - [ ] Language Switcher
-  - [ ] Locale Storage
+- [x] **Internationalisierung (i18n)** ✅ *Abgeschlossen: 01.12.2025*
+  - [x] Custom I18n-Klasse (keine externen Dependencies)
+  - [x] Translation-Management mit fetch() für JSON-Files
+  - [x] Deutsch (DE) - Vollständige Übersetzungen
+  - [x] Englisch (EN) - Vollständige Übersetzungen
+  - [x] Language Switcher UI (🇩🇪 / 🇬🇧 Buttons)
+  - [x] LocalStorage für Sprach-Persistenz
+  - [x] Browser-Language Detection
+  - [x] data-i18n Attribute für automatisches Update
+  - [x] data-i18n-placeholder für Input-Felder
+  - [x] data-i18n-title für Tooltips
+  - [x] Nested Translation Keys (dot notation)
+  - [x] Parameter Interpolation ({name} syntax)
+  - [x] Fallback-Mechanismus (DE als Fallback)
+  - [x] Custom Events (languageChanged)
+  - [x] Global t() Helper-Function
+  - [x] ~200 Zeilen i18n.js
+  - [x] ~60 Translation Keys pro Sprache
+  - [x] Mobile-Responsive Language Switcher
 
 ### Performance Optimizations
 - [ ] **Streaming Upload**

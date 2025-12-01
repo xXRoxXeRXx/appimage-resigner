@@ -42,9 +42,14 @@ async function loadVersion() {
 }
 
 // Initialize dark mode on load
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initDarkMode();
     loadVersion();
+    
+    // Initialize i18n
+    if (typeof i18n !== 'undefined') {
+        await i18n.init();
+    }
     
     // Add event listener to theme toggle
     const themeToggle = document.getElementById('theme-toggle');
@@ -61,6 +66,36 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+    
+    // Add event listeners to language buttons
+    const langButtons = document.querySelectorAll('.lang-button');
+    langButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            const lang = button.getAttribute('data-lang');
+            if (typeof i18n !== 'undefined') {
+                i18n.setLanguage(lang);
+                
+                // Update active state
+                langButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                toast.success(`✓ ${i18n.getLanguageName(lang)}`);
+            }
+        });
+    });
+    
+    // Listen for language change events
+    window.addEventListener('languageChanged', (event) => {
+        const lang = event.detail.lang;
+        // Update active button
+        langButtons.forEach(btn => {
+            if (btn.getAttribute('data-lang') === lang) {
+                btn.classList.add('active');
+            } else {
+                btn.classList.remove('active');
+            }
+        });
+    });
 });
 
 let sessionId = null;

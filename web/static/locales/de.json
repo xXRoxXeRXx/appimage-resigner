@@ -1,0 +1,106 @@
+{
+  "app": {
+    "title": "AppImage Re-Signer",
+    "subtitle": "Signieren Sie Ihre AppImages einfach über das Web"
+  },
+  "buttons": {
+    "sign": "AppImage signieren",
+    "download": "Herunterladen",
+    "downloadZip": "Als ZIP herunterladen",
+    "downloadAppImage": "AppImage herunterladen",
+    "downloadSignature": "Signatur herunterladen",
+    "copyCommand": "Befehl kopieren",
+    "newSigning": "Neue Signierung"
+  },
+  "step1": {
+    "title": "AppImage hochladen",
+    "dropzone": "AppImage hier ablegen oder klicken zum Auswählen",
+    "fileSelected": "Datei ausgewählt"
+  },
+  "step2": {
+    "title": "GPG-Schlüssel hochladen",
+    "dropzone": "GPG-Schlüssel hier ablegen oder klicken",
+    "uploadMethod": "Upload-Methode",
+    "privateKey": "Privater Schlüssel",
+    "keyId": "Key-ID",
+    "passphrase": "Passphrase",
+    "passphraseOptional": "Passphrase (optional)",
+    "passphraseHelp": "Key-Passphrase falls vorhanden",
+    "keyIdHelp": "GPG Key-ID (z.B. ABCD1234)",
+    "embedSignature": "Signatur in AppImage einbetten",
+    "embedSignatureHelp": "Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur"
+  },
+  "step3": {
+    "title": "Signieren",
+    "progress": "Signierung läuft..."
+  },
+  "step4": {
+    "title": "Ergebnis",
+    "success": "Signierung erfolgreich!",
+    "error": "Signierung fehlgeschlagen"
+  },
+  "verification": {
+    "title": "Signatur-Verifikation",
+    "valid": "Signatur gültig",
+    "invalid": "Signatur ungültig",
+    "warning": "Warnung",
+    "signature": "Signatur",
+    "signedBy": "Signiert von",
+    "keyId": "Key-ID",
+    "fingerprint": "Fingerprint",
+    "timestamp": "Zeitstempel",
+    "fileName": "Dateiname",
+    "fileSize": "Dateigröße"
+  },
+  "messages": {
+    "sessionError": "Fehler beim Erstellen der Session. Bitte laden Sie die Seite neu.",
+    "invalidFile": "Bitte wählen Sie eine .AppImage Datei aus.",
+    "uploadSuccess": "✓ AppImage erfolgreich hochgeladen!",
+    "uploadError": "Upload fehlgeschlagen: {error}",
+    "uploadFailed": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "keyUploadSuccess": "✓ GPG-Schlüssel erfolgreich hochgeladen!",
+    "keyUploadError": "Key-Upload fehlgeschlagen: {error}",
+    "keyUploadFailed": "Key-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "signingSuccess": "✓ AppImage erfolgreich signiert!",
+    "signingStarted": "🔐 Signierung gestartet...",
+    "signingNotReady": "Bitte laden Sie zuerst AppImage und GPG-Schlüssel hoch",
+    "downloadStarted": "⬇️ Download gestartet...",
+    "copySuccess": "✓ In Zwischenablage kopiert!",
+    "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.",
+    "verificationError": "Verifikation fehlgeschlagen: {error}",
+    "selectionReset": "Auswahl zurückgesetzt",
+    "appImageReset": "AppImage-Auswahl zurückgesetzt",
+    "keyReset": "Schlüssel-Auswahl zurückgesetzt"
+  },
+  "footer": {
+    "documentation": "📚 Dokumentation",
+    "api": "🔌 API",
+    "github": "💻 GitHub",
+    "health": "❤️ Health Status",
+    "madeWith": "Made with ❤️ and AI in Berlin 🚀"
+  },
+  "keyboard": {
+    "shortcuts": "Tastaturkürzel",
+    "help": "⌨️ Verfügbare Tastaturkürzel:",
+    "sign": "AppImage signieren",
+    "download": "Ergebnis herunterladen",
+    "reset": "Neue Signierung starten",
+    "theme": "Dark/Light Mode wechseln",
+    "showHelp": "Hilfe anzeigen",
+    "cancel": "Auswahl zurücksetzen / Unfokussieren",
+    "submit": "Formular absenden / Signieren",
+    "tip": "💡 Tipp: Die meisten Kürzel funktionieren auch während der Eingabe!"
+  },
+  "theme": {
+    "toggle": "Dark/Light Mode wechseln",
+    "toggleShortcut": "Dark/Light Mode wechseln (Strg+T)"
+  },
+  "help": {
+    "button": "Tastaturkürzel anzeigen (Strg+H oder F1)"
+  },
+  "language": {
+    "select": "Sprache wählen",
+    "de": "Deutsch",
+    "en": "English"
+  }
+}

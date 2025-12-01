@@ -24,19 +24,29 @@
     </div>
 
     <div class="container">
+        <!-- Language Switcher -->
+        <div class="language-switcher" id="language-switcher">
+            <button class="lang-button active" data-lang="de" title="Deutsch">
+                <span class="flag">🇩🇪</span>
+            </button>
+            <button class="lang-button" data-lang="en" title="English">
+                <span class="flag">🇬🇧</span>
+            </button>
+        </div>
+
         <!-- Dark Mode Toggle -->
-        <button class="theme-toggle" id="theme-toggle" title="Dark/Light Mode wechseln (Strg+T)">
+        <button class="theme-toggle" id="theme-toggle" data-i18n-title="theme.toggleShortcut">
             <span id="theme-icon">🌙</span>
         </button>
 
         <!-- Keyboard Shortcuts Help Button -->
-        <button class="help-button" id="help-button" title="Tastaturkürzel anzeigen (Strg+H oder F1)">
+        <button class="help-button" id="help-button" data-i18n-title="help.button">
             <span>⌨️</span>
         </button>
 
         <header>
-            <h1>🔐 AppImage Re-Signer</h1>
-            <p class="subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
+            <h1 data-i18n="app.title">🔐 AppImage Re-Signer</h1>
+            <p class="subtitle" data-i18n="app.subtitle">Signieren Sie Ihre AppImages einfach über das Web</p>
         </header>
 
         <main>
@@ -44,12 +54,12 @@
             <section class="card" id="step1">
                 <div class="step-header">
                     <span class="step-number">1</span>
-                    <h2>AppImage hochladen</h2>
+                    <h2 data-i18n="step1.title">AppImage hochladen</h2>
                 </div>
                 
                 <div class="upload-area" id="appimage-drop-zone">
                     <div class="upload-icon">📦</div>
-                    <p>AppImage hier ablegen oder klicken zum Auswählen</p>
+                    <p data-i18n="step1.dropzone">AppImage hier ablegen oder klicken zum Auswählen</p>
                     <input type="file" id="appimage-input" accept=".AppImage" hidden>
                     <div class="file-info" id="appimage-info" style="display: none;">
                         <span class="filename"></span>
@@ -202,6 +212,7 @@
     </div>
 
     <script src="/static/toast.js"></script>
+    <script src="/static/i18n.js"></script>
     <script src="/static/keyboard.js"></script>
     <script src="/static/app.js"></script>
 </body>

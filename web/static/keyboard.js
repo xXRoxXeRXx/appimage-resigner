@@ -221,7 +221,10 @@ class KeyboardManager {
      * Show keyboard shortcuts help
      */
     showHelp() {
-        let helpText = '⌨️ Verfügbare Tastaturkürzel:\n\n';
+        // Use i18n if available, otherwise fallback to German
+        const t = (key) => (typeof i18n !== 'undefined' && i18n.initialized) ? i18n.t(key) : key;
+        
+        let helpText = t('keyboard.help') + '\n\n';
         
         if (this.shortcuts.has('global')) {
             this.shortcuts.get('global').forEach((shortcut, key) => {
@@ -234,7 +237,7 @@ class KeyboardManager {
             });
         }
         
-        helpText += '\n💡 Tipp: Die meisten Kürzel funktionieren auch während der Eingabe!';
+        helpText += '\n' + t('keyboard.tip');
         
         // Use toast with longer duration for help
         toast.info(helpText, 15000);

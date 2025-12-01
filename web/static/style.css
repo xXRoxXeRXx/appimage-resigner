@@ -172,6 +172,58 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
+/* Language Switcher */
+.language-switcher {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    gap: 8px;
+    z-index: 10;
+}
+
+.lang-button {
+    background: var(--upload-zone-bg);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 12px var(--shadow-sm);
+}
+
+.lang-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 8px 20px var(--shadow-md);
+    background: var(--upload-zone-hover);
+}
+
+.lang-button:active {
+    transform: translateY(0) scale(0.98);
+}
+
+.lang-button.active {
+    border-color: var(--global--color-ionos-blue);
+    background: var(--upload-zone-hover);
+    box-shadow: 0 6px 16px var(--shadow-md);
+}
+
+.lang-button .flag {
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+[data-theme="dark"] .lang-button.active {
+    border-color: #4a90e2;
+}
+
 header {
     text-align: center;
     margin-bottom: 40px;
@@ -1189,6 +1241,19 @@ footer a:hover {
 
     .subtitle {
         font-size: 14px;
+    }
+
+    /* Language switcher on mobile */
+    .language-switcher {
+        top: 15px;
+        left: 15px;
+        gap: 6px;
+    }
+
+    .lang-button {
+        width: 44px;
+        height: 44px;
+        font-size: 22px;
     }
 
     /* Theme toggle and help button positioning */
