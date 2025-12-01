@@ -47,6 +47,11 @@ Thumbs.db
 private-keys/
 *.asc.private
 temp_keys/
+# DO NOT COMMIT PRIVATE KEYS!
+*private*.asc
+*secret*.asc
+privatekey*.asc
+secretkey*.asc
 
 # Test files
 *.appimage.test
