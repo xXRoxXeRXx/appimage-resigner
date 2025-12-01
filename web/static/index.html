@@ -88,19 +88,19 @@
             <section class="card" id="step2" style="opacity: 0.5; pointer-events: none;">
                 <div class="step-header">
                     <span class="step-number">2</span>
-                    <h2>GPG Key bereitstellen</h2>
+                    <h2 data-i18n="step2.title">GPG Key bereitstellen</h2>
                 </div>
                 
                 <div class="key-options">
                     <div class="option-tabs">
-                        <button class="tab-button active" data-tab="upload">Key hochladen</button>
-                        <button class="tab-button" data-tab="keyid">Key ID eingeben</button>
+                        <button class="tab-button active" data-tab="upload" data-i18n="step2.privateKey">Key hochladen</button>
+                        <button class="tab-button" data-tab="keyid" data-i18n="step2.keyId">Key ID eingeben</button>
                     </div>
 
                     <div class="tab-content active" id="upload-tab">
                         <div class="upload-area" id="key-drop-zone">
                             <div class="upload-icon">🔑</div>
-                            <p>GPG Private Key hier ablegen oder klicken</p>
+                            <p data-i18n="step2.dropzone">GPG Private Key hier ablegen oder klicken</p>
                             <input type="file" id="key-input" accept=".key,.gpg,.asc" hidden>
                             <div class="file-info" id="key-info" style="display: none;">
                                 <span class="filename"></span>
@@ -110,24 +110,24 @@
 
                     <div class="tab-content" id="keyid-tab">
                         <div class="form-group">
-                            <label for="key-id-input">Key ID:</label>
-                            <input type="text" id="key-id-input" placeholder="z.B. C407155E5D49FE6B">
-                            <small>Key muss bereits im System GPG Keyring vorhanden sein</small>
+                            <label for="key-id-input" data-i18n="step2.keyId">Key ID:</label>
+                            <input type="text" id="key-id-input" data-i18n-placeholder="step2.keyIdHelp">
+                            <small data-i18n="step2.keyIdSystem">Key muss bereits im System GPG Keyring vorhanden sein</small>
                         </div>
                     </div>
                 </div>
 
                 <div class="form-group">
-                    <label for="passphrase-input">Passphrase (optional):</label>
-                    <input type="password" id="passphrase-input" placeholder="Key-Passphrase falls vorhanden">
+                    <label for="passphrase-input" data-i18n="step2.passphraseOptional">Passphrase (optional):</label>
+                    <input type="password" id="passphrase-input" data-i18n-placeholder="step2.passphraseHelp">
                 </div>
 
                 <div class="form-group">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="checkbox" id="embed-signature" style="width: auto; margin: 0;">
-                        <span>Signatur in AppImage einbetten</span>
+                        <span data-i18n="step2.embedSignature">Signatur in AppImage einbetten</span>
                     </label>
-                    <small>Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur</small>
+                    <small data-i18n="step2.embedSignatureHelp">Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur</small>
                 </div>
             </section>
 
@@ -135,18 +135,18 @@
             <section class="card" id="step3" style="opacity: 0.5; pointer-events: none;">
                 <div class="step-header">
                     <span class="step-number">3</span>
-                    <h2>Signieren</h2>
+                    <h2 data-i18n="step3.title">Signieren</h2>
                 </div>
                 
-                <button class="btn-primary" id="sign-button" title="Tastenkürzel: Strg+S">
+                <button class="btn-primary" id="sign-button" data-i18n-title="theme.toggleShortcut">
                     <span class="btn-icon">✍️</span>
-                    AppImage signieren
+                    <span data-i18n="buttons.sign">AppImage signieren</span>
                     <span class="keyboard-hint">Strg+S</span>
                 </button>
 
                 <div class="progress" id="progress" style="display: none;">
                     <div class="progress-bar"></div>
-                    <p class="progress-text">Signierung läuft...</p>
+                    <p class="progress-text" data-i18n="step3.progress">Signierung läuft...</p>
                 </div>
             </section>
 
@@ -154,12 +154,12 @@
             <section class="card" id="step4" style="display: none;">
                 <div class="step-header">
                     <span class="step-number">✓</span>
-                    <h2>Ergebnis</h2>
+                    <h2 data-i18n="step4.title">Ergebnis</h2>
                 </div>
 
                 <div class="result-success" id="result-success">
                     <div class="success-icon">✅</div>
-                    <h3>Signierung erfolgreich!</h3>
+                    <h3 data-i18n="step4.success">Signierung erfolgreich!</h3>
                     
                     <div class="verification-details" id="verification-details">
                         <!-- Will be filled by JavaScript -->
@@ -168,15 +168,15 @@
                     <div class="download-buttons">
                         <a href="#" class="btn-download btn-download-primary" id="download-zip">
                             <span>📦</span>
-                            Beide als ZIP herunterladen
+                            <span data-i18n="buttons.downloadZip">Beide als ZIP herunterladen</span>
                         </a>
                         <a href="#" class="btn-download" id="download-appimage">
                             <span>📦</span>
-                            Signierte AppImage
+                            <span data-i18n="buttons.downloadAppImage">Signierte AppImage</span>
                         </a>
                         <a href="#" class="btn-download" id="download-signature">
                             <span>🔐</span>
-                            Signatur (.asc)
+                            <span data-i18n="buttons.downloadSignature">Signatur (.asc)</span>
                         </a>
                     </div>
                 </div>
@@ -196,17 +196,17 @@
 
         <footer>
             <p>
-                <strong>AppImage Re-Signer</strong> <span id="app-version" class="version-badge">v2.0.0</span>
+                <strong data-i18n="app.title">AppImage Re-Signer</strong> <span id="app-version" class="version-badge">v2.0.0</span>
                 <br>
-                <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank">
-                    📦 GitHub Repository
+                <a href="https://github.com/xXRoxXeRXx/appimage-resigner" target="_blank" data-i18n="footer.github">
+                    � GitHub
                 </a>
                 |
-                <a href="/health" target="_blank" title="System Health Check">
+                <a href="/health" target="_blank" data-i18n="footer.health" data-i18n-title="footer.health">
                     ❤️ Health Status
                 </a>
                 <br>
-                <span style="opacity: 0.7;">Made with ❤️ and AI in Berlin 🚀</span>
+                <span style="opacity: 0.7;" data-i18n="footer.madeWith">Made with ❤️ and AI in Berlin 🚀</span>
             </p>
         </footer>
     </div>

@@ -1,14 +1,14 @@
 {
   "app": {
-    "title": "AppImage Re-Signer",
+    "title": "🔐 AppImage Re-Signer",
     "subtitle": "Signieren Sie Ihre AppImages einfach über das Web"
   },
   "buttons": {
     "sign": "AppImage signieren",
     "download": "Herunterladen",
-    "downloadZip": "Als ZIP herunterladen",
-    "downloadAppImage": "AppImage herunterladen",
-    "downloadSignature": "Signatur herunterladen",
+    "downloadZip": "Beide als ZIP herunterladen",
+    "downloadAppImage": "Signierte AppImage",
+    "downloadSignature": "Signatur (.asc)",
     "copyCommand": "Befehl kopieren",
     "newSigning": "Neue Signierung"
   },
@@ -19,14 +19,15 @@
   },
   "step2": {
     "title": "GPG-Schlüssel hochladen",
-    "dropzone": "GPG-Schlüssel hier ablegen oder klicken",
+    "dropzone": "GPG Private Key hier ablegen oder klicken",
     "uploadMethod": "Upload-Methode",
     "privateKey": "Privater Schlüssel",
     "keyId": "Key-ID",
     "passphrase": "Passphrase",
     "passphraseOptional": "Passphrase (optional)",
     "passphraseHelp": "Key-Passphrase falls vorhanden",
-    "keyIdHelp": "GPG Key-ID (z.B. ABCD1234)",
+    "keyIdHelp": "z.B. C407155E5D49FE6B",
+    "keyIdSystem": "Key muss bereits im System GPG Keyring vorhanden sein",
     "embedSignature": "Signatur in AppImage einbetten",
     "embedSignatureHelp": "Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur"
   },
