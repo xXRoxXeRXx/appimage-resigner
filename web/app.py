@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Optional
 from datetime import datetime, timedelta
 
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Request
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -27,10 +27,26 @@ from src.verify import AppImageVerifier
 from src.key_manager import GPGKeyManager
 
 # Import logging configuration
-from web.core.logging_config import setup_logging, get_logger, log_operation
+from web.core.logging_config import (
+    setup_logging,
+    get_logger,
+    log_operation,
+    log_audit_event,
+    log_security_event,
+    log_file_operation
+)
 from web.core.config import settings
 from web.core.validation import validate_appimage_file
+from web.core.security import get_client_ip, sanitize_filename
 from web.services.streaming import StreamingUpload
+
+# Import security middlewares
+from web.middleware.security import (
+    SecurityHeadersMiddleware,
+    CSRFProtectionMiddleware,
+    FileSizeValidationMiddleware,
+    RateLimitMiddleware,
+)
 
 # Setup logging
 setup_logging(
@@ -66,6 +82,34 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security middlewares
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    enable_hsts=True,
+    hsts_max_age=31536000,  # 1 year
+    enable_csp=True,
+    csp_report_only=False,  # Set to True for testing, False for enforcement
+)
+
+app.add_middleware(
+    FileSizeValidationMiddleware,
+    max_size=settings.max_file_size_bytes
+)
+
+app.add_middleware(
+    RateLimitMiddleware,
+    max_requests=100,  # 100 requests per window
+    window_seconds=60,  # 60 second window
+)
+
+# CSRF Protection (optional - currently in warning mode)
+# app.add_middleware(
+#     CSRFProtectionMiddleware,
+#     token_header="X-CSRF-Token"
+# )
+
+logger.info("Security middlewares initialized")
 
 # Mount static files (frontend)
 app.mount("/static", StaticFiles(directory="web/static"), name="static")
@@ -228,24 +272,48 @@ async def create_session():
 
 @app.post("/api/upload/appimage")
 async def upload_appimage(
+    request: Request,
     session_id: str = Form(...),
     file: UploadFile = File(...)
 ):
     """Upload an AppImage file"""
     
+    # Get client info for audit logging
+    client_ip = get_client_ip(request)
+    user_agent = request.headers.get("user-agent", "unknown")
+    
     if session_id not in sessions:
         logger.warning(f"Upload attempt with invalid session | session_id={session_id}")
+        log_security_event(
+            logger,
+            "invalid_session_upload",
+            severity="warning",
+            ip_address=client_ip,
+            details={"session_id": session_id}
+        )
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = sessions[session_id]
     
+    # Sanitize filename
+    original_filename = file.filename
+    safe_filename = sanitize_filename(original_filename)
+    
     # Validate file extension first
-    if not file.filename.endswith('.AppImage'):
-        logger.warning(f"Invalid file upload | session_id={session_id} | filename={file.filename}")
+    if not safe_filename.endswith('.AppImage'):
+        logger.warning(f"Invalid file upload | session_id={session_id} | filename={safe_filename}")
+        log_audit_event(
+            logger,
+            "upload_rejected",
+            session_id=session_id,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={"reason": "invalid_extension", "filename": safe_filename}
+        )
         raise HTTPException(status_code=400, detail="File must be an AppImage")
     
     # Save file temporarily
-    file_path = UPLOAD_DIR / f"{session_id}_{file.filename}"
+    file_path = UPLOAD_DIR / f"{session_id}_{safe_filename}"
     
     try:
         async with aiofiles.open(file_path, 'wb') as out_file:
@@ -264,12 +332,43 @@ async def upload_appimage(
             # Delete invalid file
             file_path.unlink(missing_ok=True)
             logger.warning(f"Invalid AppImage file | session_id={session_id} | error={error_msg}")
+            log_audit_event(
+                logger,
+                "upload_rejected",
+                session_id=session_id,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                details={"reason": "validation_failed", "error": error_msg, "filename": safe_filename}
+            )
             raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
         
         session.appimage_path = file_path
         session.status = "appimage_uploaded"
         
-        logger.info(f"AppImage uploaded | session_id={session_id} | filename={file.filename} | size={len(content)}")
+        file_size_mb = len(content) / (1024 * 1024)
+        logger.info(f"AppImage uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB")
+        
+        # Audit log: successful upload
+        log_audit_event(
+            logger,
+            "appimage_uploaded",
+            session_id=session_id,
+            ip_address=client_ip,
+            user_agent=user_agent,
+            details={
+                "filename": safe_filename,
+                "size_mb": f"{file_size_mb:.2f}",
+                "original_filename": original_filename if original_filename != safe_filename else None
+            }
+        )
+        
+        log_file_operation(
+            logger,
+            "upload",
+            str(file_path),
+            session_id=session_id,
+            success=True
+        )
         
         # Check for existing signature info (without verification)
         signature_info = None

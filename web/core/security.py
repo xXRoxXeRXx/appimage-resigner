@@ -214,3 +214,158 @@ def get_file_mime_type(file_path: Path) -> Optional[str]:
     
     mime_type, _ = mimetypes.guess_type(str(file_path))
     return mime_type
+
+
+# ============================================================================
+# Additional Security Functions
+# ============================================================================
+
+def sanitize_path_component(component: str) -> str:
+    """Sanitize a single path component (filename or directory name).
+    
+    More aggressive than sanitize_filename - removes all special characters.
+    
+    Args:
+        component: Path component to sanitize
+        
+    Returns:
+        Sanitized path component
+    """
+    import re
+    
+    # Remove any non-alphanumeric, non-underscore, non-hyphen, non-dot characters
+    component = re.sub(r'[^a-zA-Z0-9._-]', '_', component)
+    
+    # Remove leading/trailing dots and spaces
+    component = component.strip('. ')
+    
+    # Prevent hidden files (on Unix systems)
+    if component.startswith('.'):
+        component = '_' + component[1:]
+    
+    return component
+
+
+def is_allowed_extension(filename: str, allowed_extensions: set) -> bool:
+    """Check if filename has an allowed extension.
+    
+    Args:
+        filename: Filename to check
+        allowed_extensions: Set of allowed extensions (e.g., {'.AppImage', '.asc'})
+        
+    Returns:
+        True if extension is allowed, False otherwise
+    """
+    ext = Path(filename).suffix.lower()
+    return ext in {e.lower() for e in allowed_extensions}
+
+
+def escape_html(text: str) -> str:
+    """Escape HTML special characters to prevent XSS.
+    
+    Args:
+        text: Text to escape
+        
+    Returns:
+        HTML-escaped text
+    """
+    import html
+    return html.escape(text, quote=True)
+
+
+def validate_content_type(content_type: str, allowed_types: set) -> bool:
+    """Validate Content-Type header.
+    
+    Args:
+        content_type: Content-Type header value
+        allowed_types: Set of allowed content types
+        
+    Returns:
+        True if content type is allowed, False otherwise
+    """
+    # Extract main type (ignore parameters like charset)
+    main_type = content_type.split(';')[0].strip().lower()
+    return main_type in {t.lower() for t in allowed_types}
+
+
+def get_client_ip(request) -> str:
+    """Get real client IP address from request.
+    
+    Handles X-Forwarded-For header when behind proxy.
+    
+    Args:
+        request: FastAPI Request object
+        
+    Returns:
+        Client IP address
+    """
+    # Check X-Forwarded-For header (when behind reverse proxy)
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if forwarded_for:
+        # X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2, ...)
+        # The first one is the real client IP
+        return forwarded_for.split(",")[0].strip()
+    
+    # Check X-Real-IP header (alternative header used by some proxies)
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    
+    # Fall back to direct connection IP
+    if request.client:
+        return request.client.host
+    
+    return "unknown"
+
+
+def sanitize_log_message(message: str) -> str:
+    """Sanitize log message to prevent log injection attacks.
+    
+    Args:
+        message: Log message to sanitize
+        
+    Returns:
+        Sanitized log message
+    """
+    # Remove newlines and carriage returns to prevent log injection
+    message = message.replace('\n', ' ').replace('\r', ' ')
+    
+    # Remove null bytes
+    message = message.replace('\0', '')
+    
+    # Limit length to prevent log file bloat
+    max_length = 1000
+    if len(message) > max_length:
+        message = message[:max_length] + "... (truncated)"
+    
+    return message
+
+
+def is_valid_session_id(session_id: str) -> bool:
+    """Validate session ID format.
+    
+    Args:
+        session_id: Session ID to validate
+        
+    Returns:
+        True if valid format, False otherwise
+    """
+    import re
+    
+    # Session IDs should be alphanumeric with dashes/underscores
+    # Length between 20 and 50 characters
+    pattern = r'^[a-zA-Z0-9_-]{20,50}$'
+    return bool(re.match(pattern, session_id))
+
+
+def constant_time_compare(a: str, b: str) -> bool:
+    """Compare two strings in constant time to prevent timing attacks.
+    
+    Args:
+        a: First string
+        b: Second string
+        
+    Returns:
+        True if strings are equal, False otherwise
+    """
+    return secrets.compare_digest(a, b)
