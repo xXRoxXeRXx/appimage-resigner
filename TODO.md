@@ -232,11 +232,24 @@
   - [x] Kontextabhängige Shortcuts
   - [x] Global verfügbar über `window.keyboard`
 
-- [ ] **Mobile-Responsive Design**
-  - [ ] Media Queries optimieren
-  - [ ] Touch-Gesten Support
-  - [ ] Mobile Navigation
-  - [ ] Viewport Meta-Tag
+- [x] **Mobile-Responsive Design** ✅ *Abgeschlossen: 01.12.2025*
+  - [x] Erweiterte Media Queries (768px, 480px, landscape)
+  - [x] Touch-optimierte Breakpoints
+  - [x] Minimum 44x44px Touch-Targets (WCAG-konform)
+  - [x] Buttons: min-height 48-52px für Touch
+  - [x] Input-Felds: min-height 48px, font-size 16px (verhindert iOS-Zoom)
+  - [x] Checkbox: 24x24px auf Mobile
+  - [x] Theme Toggle & Help Button: 44-48px
+  - [x] Responsive Upload-Zonen (180-200px height)
+  - [x] Stack Download-Buttons auf Mobile
+  - [x] Hide Keyboard-Hints auf kleinen Screens
+  - [x] Touch-Device Media Query (hover: none)
+  - [x] Active States statt Hover auf Touch
+  - [x] Landscape-Mode Optimierungen
+  - [x] Print Styles
+  - [x] Viewport Meta-Tags erweitert (mobile-web-app, apple-mobile)
+  - [x] Progressive spacing (tight auf Mobile)
+  - [x] ~300 Zeilen responsive CSS
 
 - [ ] **Internationalisierung**
   - [ ] i18n Framework (i18next)
