@@ -25,9 +25,26 @@ function toggleDarkMode() {
     }
 }
 
+// Load version from server
+async function loadVersion() {
+    try {
+        const response = await fetch('/health');
+        const data = await response.json();
+        if (data.version) {
+            const versionBadge = document.getElementById('app-version');
+            if (versionBadge) {
+                versionBadge.textContent = `v${data.version}`;
+            }
+        }
+    } catch (error) {
+        console.error('Could not load version:', error);
+    }
+}
+
 // Initialize dark mode on load
 document.addEventListener('DOMContentLoaded', () => {
     initDarkMode();
+    loadVersion();
     
     // Add event listener to theme toggle
     const themeToggle = document.getElementById('theme-toggle');

@@ -8,9 +8,16 @@ from pathlib import Path
 from typing import List, Optional
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+# Application version
+VERSION = "2.0.0"
+
 
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
+    
+    # Application
+    app_name: str = "AppImage Re-Signer"
+    version: str = VERSION
     
     # Server Configuration
     host: str = "127.0.0.1"

@@ -163,6 +163,52 @@ async def root():
     return FileResponse("web/static/index.html")
 
 
+@app.get("/health")
+async def health_check():
+    """
+    Health check endpoint for monitoring and Docker HEALTHCHECK.
+    Returns application status, version, and GPG availability.
+    """
+    from datetime import datetime
+    
+    # Check GPG availability
+    gpg_available = False
+    gpg_version = None
+    try:
+        import gnupg
+        gpg = gnupg.GPG()
+        gpg_version = gpg.version
+        gpg_available = gpg_version is not None
+    except Exception as e:
+        logger.warning(f"GPG check failed | error={str(e)}")
+    
+    # Get session count
+    active_sessions = len(sessions)
+    
+    # Scheduler status
+    scheduler_running = scheduler.running if scheduler else False
+    
+    return {
+        "status": "healthy",
+        "application": settings.app_name,
+        "version": settings.version,
+        "timestamp": datetime.now().isoformat(),
+        "uptime_check": "ok",
+        "gpg": {
+            "available": gpg_available,
+            "version": gpg_version
+        },
+        "sessions": {
+            "active": active_sessions,
+            "cleanup_interval": "1 hour",
+            "retention": f"{CLEANUP_AFTER_HOURS} hours"
+        },
+        "scheduler": {
+            "running": scheduler_running
+        }
+    }
+
+
 @app.post("/api/session/create")
 async def create_session():
     """Create a new signing session"""

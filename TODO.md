@@ -43,28 +43,28 @@
 ## 🟡 Priorität 1 - Wichtig (Features & UX)
 
 ### Quick Wins
-- [ ] **Health-Check Endpoint**
-  - [ ] `/health` Endpoint erstellen
-  - [ ] Status, Version, GPG-Verfügbarkeit anzeigen
-  - [ ] Timestamp hinzufügen
-  - [ ] In Docker HEALTHCHECK verwenden
+- [x] **Health-Check Endpoint** ✅
+  - [x] `/health` Endpoint erstellen
+  - [x] Status, Version, GPG-Verfügbarkeit anzeigen
+  - [x] Timestamp hinzufügen
+  - [x] In Docker HEALTHCHECK verwenden
 
-- [ ] **Version im Footer**
-  - [ ] Version in `web/static/index.html` hinzufügen
-  - [ ] Version aus Config/Package auslesen
-  - [ ] "Made with ❤️" Text
+- [x] **Version im Footer** ✅
+  - [x] Version in `web/static/index.html` hinzufügen
+  - [x] Version aus Config/Package auslesen
+  - [x] "Made with ❤️" Text
 
-- [ ] **.env Configuration**
-  - [ ] `.env.example` erstellen
-  - [ ] Environment Variables dokumentieren
-  - [ ] pydantic-settings implementieren
-  - [ ] Config-Klasse in `web/core/config.py`
+- [x] **.env Configuration** ✅
+  - [x] `.env.example` erstellen
+  - [x] Environment Variables dokumentieren
+  - [x] pydantic-settings implementieren
+  - [x] Config-Klasse in `web/core/config.py`
 
-- [ ] **requirements.txt aufräumen**
-  - [ ] Duplikate entfernen
-  - [ ] Kategorien erstellen (Web, GPG, CLI, Testing)
-  - [ ] Versionen aktualisieren
-  - [ ] Optional dependencies markieren
+- [x] **requirements.txt aufräumen** ✅
+  - [x] Duplikate entfernen
+  - [x] Kategorien erstellen (Web, GPG, CLI, Testing)
+  - [x] Versionen aktualisieren
+  - [x] Optional dependencies markieren
 
 ### Features
 - [ ] **Batch-Signierung**
@@ -399,17 +399,17 @@
 - [x] Live-Preview (bereits implementiert)
 - [x] Button Styling (bereits implementiert)
 - [x] Signature Bug Fix (bereits implementiert)
-- [ ] Health-Check Endpoint
-- [ ] .env Configuration
-- [ ] Version im Footer
-- [ ] requirements.txt aufräumen
+- [x] Health-Check Endpoint ✅
+- [x] .env Configuration ✅
+- [x] Version im Footer ✅
+- [x] requirements.txt aufräumen ✅
 
 ### Sprint 2 (Security) - 3-5 Tage
-- [ ] Logging System
-- [ ] Session Cleanup
-- [ ] File Upload Validation
-- [ ] CORS Security
-- [ ] Error Handling
+- [x] Logging System ✅
+- [x] Session Cleanup ✅
+- [x] File Upload Validation ✅
+- [x] CORS Security ✅
+- [x] Error Handling ✅
 
 ### Sprint 3 (Testing) - 3-5 Tage
 - [ ] Unit Tests schreiben
