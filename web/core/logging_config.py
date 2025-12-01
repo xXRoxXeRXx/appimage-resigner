@@ -31,12 +31,12 @@ def setup_logging(
 ) -> logging.Logger:
     """
     Set up logging configuration for the application.
-    
+
     Args:
         log_level: Log level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
         log_to_file: Whether to log to file
         log_to_console: Whether to log to console
-        
+
     Returns:
         Configured root logger
     """
@@ -45,31 +45,31 @@ def setup_logging(
         level = getattr(logging, log_level.upper(), LOG_LEVEL)
     else:
         level = LOG_LEVEL
-    
+
     # Configure root logger
     root_logger = logging.getLogger()
     root_logger.setLevel(level)
-    
+
     # Remove existing handlers
     root_logger.handlers.clear()
-    
+
     # Create formatter
     formatter = logging.Formatter(LOG_FORMAT, LOG_DATE_FORMAT)
-    
+
     # Console handler
     if log_to_console:
         console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(level)
         console_handler.setFormatter(formatter)
         root_logger.addHandler(console_handler)
-    
+
     # File handler with rotation
     if log_to_file:
         try:
             # Ensure log directory exists and is writable
             log_dir = Path(LOG_FILE).parent
             log_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Rotate log files: max 10 files, 10 MB each
             file_handler = logging.handlers.RotatingFileHandler(
                 LOG_FILE,
@@ -94,7 +94,7 @@ def setup_logging(
                 root_logger.addHandler(console_handler)
                 root_logger.warning(warning_msg)
                 root_logger.warning("Enabled console logging as fallback")
-    
+
     # Log startup message
     root_logger.info("=" * 80)
     root_logger.info("AppImage Re-Signer - Logging initialized")
@@ -104,17 +104,17 @@ def setup_logging(
     else:
         root_logger.info("File logging: Disabled")
     root_logger.info("=" * 80)
-    
+
     return root_logger
 
 
 def get_logger(name: str) -> logging.Logger:
     """
     Get a logger instance for a specific module.
-    
+
     Args:
         name: Logger name (usually __name__)
-        
+
     Returns:
         Logger instance
     """
@@ -130,7 +130,7 @@ def log_operation(
 ) -> None:
     """
     Log an operation with structured data.
-    
+
     Args:
         logger: Logger instance
         operation: Operation name (e.g., "sign_appimage", "verify_signature")
@@ -141,7 +141,7 @@ def log_operation(
     message = f"{operation} | {status}"
     if context:
         message += f" | {context}"
-    
+
     if status == "failed":
         logger.error(message)
     elif status == "started":
@@ -167,13 +167,13 @@ def log_audit_event(
 ) -> None:
     """
     Log an audit event for compliance and security monitoring.
-    
+
     This function creates structured audit logs that can be used for:
     - Security incident response
     - Compliance reporting (ISO 27001, SOC 2, etc.)
     - User activity tracking
     - Forensic analysis
-    
+
     Args:
         logger: Logger instance
         event_type: Type of event (e.g., "sign_appimage", "import_key", "delete_key")
@@ -185,27 +185,27 @@ def log_audit_event(
     """
     # Build audit message
     parts = [f"AUDIT: {event_type}"]
-    
+
     if session_id:
         parts.append(f"session={session_id}")
-    
+
     if user_id:
         parts.append(f"user={user_id}")
-    
+
     if ip_address:
         parts.append(f"ip={ip_address}")
-    
+
     if user_agent:
         # Truncate user agent to prevent log bloat
         ua_short = user_agent[:100] + "..." if len(user_agent) > 100 else user_agent
         parts.append(f"user_agent={ua_short}")
-    
+
     if details:
         details_str = " ".join(f"{k}={v}" for k, v in details.items())
         parts.append(details_str)
-    
+
     message = " | ".join(parts)
-    
+
     # Always log audit events at INFO level (or higher)
     logger.info(message)
 
@@ -219,13 +219,13 @@ def log_security_event(
 ) -> None:
     """
     Log a security-related event for monitoring and alerting.
-    
+
     Use this for events that may indicate security issues:
     - Failed authentication attempts
     - Rate limiting triggered
     - Invalid input detected
     - Suspicious activity
-    
+
     Args:
         logger: Logger instance
         event_type: Type of security event
@@ -234,16 +234,16 @@ def log_security_event(
         details: Additional event details
     """
     parts = [f"SECURITY: {event_type}"]
-    
+
     if ip_address:
         parts.append(f"ip={ip_address}")
-    
+
     if details:
         details_str = " ".join(f"{k}={v}" for k, v in details.items())
         parts.append(details_str)
-    
+
     message = " | ".join(parts)
-    
+
     # Log at appropriate level based on severity
     if severity == "critical":
         logger.critical(message)
@@ -265,7 +265,7 @@ def log_file_operation(
 ) -> None:
     """
     Log file operations for audit trail.
-    
+
     Args:
         logger: Logger instance
         operation: Operation type (upload, sign, download, delete)
@@ -275,16 +275,16 @@ def log_file_operation(
         error: Error message if failed
     """
     from pathlib import Path
-    
+
     # Sanitize file path (only log filename, not full path)
     filename = Path(file_path).name
-    
+
     parts = [f"FILE: {operation}"]
     parts.append(f"file={filename}")
-    
+
     if session_id:
         parts.append(f"session={session_id}")
-    
+
     if success:
         parts.append("status=success")
     else:
@@ -293,9 +293,9 @@ def log_file_operation(
             # Sanitize error message
             error_safe = error.replace('\n', ' ').replace('\r', ' ')[:200]
             parts.append(f"error={error_safe}")
-    
+
     message = " | ".join(parts)
-    
+
     if success:
         logger.info(message)
     else:

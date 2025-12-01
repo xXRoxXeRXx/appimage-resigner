@@ -69,18 +69,18 @@ def generated_gpg_key(gpg_instance: gnupg.GPG, test_key_data: dict):
 def sample_appimage(temp_dir: Path) -> Path:
     """Create a minimal valid AppImage Type 2 file"""
     appimage_path = temp_dir / "test-app.AppImage"
-    
+
     with open(appimage_path, 'wb') as f:
         # ELF Header (simplified)
         f.write(b'\x7fELF')  # Magic bytes
         f.write(b'\x02' * 4)  # Padding to offset 8
-        
+
         # AppImage Type 2 magic at offset 8
         f.write(b'AI\x02')
-        
+
         # Add some dummy data
         f.write(b'\x00' * 1000)
-    
+
     return appimage_path
 
 
@@ -98,13 +98,13 @@ def large_file(temp_dir: Path) -> Path:
     """Create a large file for size validation testing"""
     file_path = temp_dir / "large.bin"
     size_mb = 600  # Larger than default limit (500 MB)
-    
+
     with open(file_path, 'wb') as f:
         # Write in chunks to avoid memory issues
         chunk_size = 1024 * 1024  # 1 MB
         for _ in range(size_mb):
             f.write(b'\x00' * chunk_size)
-    
+
     return file_path
 
 

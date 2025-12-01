@@ -121,7 +121,7 @@ sessions = {}
 
 class SigningSession:
     """Represents a signing session with uploaded files"""
-    
+
     def __init__(self, session_id: str):
         self.session_id = session_id
         self.created_at = datetime.now()
@@ -139,7 +139,7 @@ def cleanup_session(session_id: str):
     """Clean up session files"""
     if session_id in sessions:
         session = sessions[session_id]
-        
+
         # Delete uploaded files
         files_deleted = 0
         if session.appimage_path and session.appimage_path.exists():
@@ -154,7 +154,7 @@ def cleanup_session(session_id: str):
         if session.signature_path and session.signature_path.exists():
             session.signature_path.unlink()
             files_deleted += 1
-        
+
         # Remove from sessions
         del sessions[session_id]
         logger.info(f"Session cleaned up | session_id={session_id} | files_deleted={files_deleted}")
@@ -163,18 +163,18 @@ def cleanup_session(session_id: str):
 def cleanup_old_sessions():
     """Clean up sessions older than CLEANUP_AFTER_HOURS"""
     cutoff_time = datetime.now() - timedelta(hours=CLEANUP_AFTER_HOURS)
-    
+
     old_sessions = [
         sid for sid, session in sessions.items()
         if session.created_at < cutoff_time
     ]
-    
+
     if old_sessions:
         logger.info(f"Cleaning up {len(old_sessions)} old sessions")
-    
+
     for sid in old_sessions:
         cleanup_session(sid)
-    
+
     return len(old_sessions)
 
 
@@ -216,7 +216,7 @@ async def health_check():
     Returns application status, version, and GPG availability.
     """
     from datetime import datetime
-    
+
     # Check GPG availability
     gpg_available = False
     gpg_version = None
@@ -227,13 +227,13 @@ async def health_check():
         gpg_available = gpg_version is not None
     except Exception as e:
         logger.warning(f"GPG check failed | error={str(e)}")
-    
+
     # Get session count
     active_sessions = len(sessions)
-    
+
     # Scheduler status
     scheduler_running = scheduler.running if scheduler else False
-    
+
     return {
         "status": "healthy",
         "application": settings.app_name,
@@ -260,9 +260,9 @@ async def create_session():
     """Create a new signing session"""
     session_id = str(uuid.uuid4())
     sessions[session_id] = SigningSession(session_id)
-    
+
     logger.info(f"Session created | session_id={session_id}")
-    
+
     return {
         "session_id": session_id,
         "status": "created",
@@ -277,11 +277,11 @@ async def upload_appimage(
     file: UploadFile = File(...)
 ):
     """Upload an AppImage file"""
-    
+
     # Get client info for audit logging
     client_ip = get_client_ip(request)
     user_agent = request.headers.get("user-agent", "unknown")
-    
+
     if session_id not in sessions:
         logger.warning(f"Upload attempt with invalid session | session_id={session_id}")
         log_security_event(
@@ -292,13 +292,13 @@ async def upload_appimage(
             details={"session_id": session_id}
         )
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     # Sanitize filename
     original_filename = file.filename
     safe_filename = sanitize_filename(original_filename)
-    
+
     # Validate file extension first
     if not safe_filename.endswith('.AppImage'):
         logger.warning(f"Invalid file upload | session_id={session_id} | filename={safe_filename}")
@@ -311,15 +311,15 @@ async def upload_appimage(
             details={"reason": "invalid_extension", "filename": safe_filename}
         )
         raise HTTPException(status_code=400, detail="File must be an AppImage")
-    
+
     # Save file temporarily
     file_path = UPLOAD_DIR / f"{session_id}_{safe_filename}"
-    
+
     try:
         async with aiofiles.open(file_path, 'wb') as out_file:
             content = await file.read()
             await out_file.write(content)
-        
+
         # Validate AppImage file (ELF header, size, format)
         is_valid, error_msg = validate_appimage_file(
             file_path,
@@ -327,7 +327,7 @@ async def upload_appimage(
             check_elf=True,
             check_appimage=True
         )
-        
+
         if not is_valid:
             # Delete invalid file
             file_path.unlink(missing_ok=True)
@@ -341,13 +341,13 @@ async def upload_appimage(
                 details={"reason": "validation_failed", "error": error_msg, "filename": safe_filename}
             )
             raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
-        
+
         session.appimage_path = file_path
         session.status = "appimage_uploaded"
-        
+
         file_size_mb = len(content) / (1024 * 1024)
         logger.info(f"AppImage uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB")
-        
+
         # Audit log: successful upload
         log_audit_event(
             logger,
@@ -361,7 +361,7 @@ async def upload_appimage(
                 "original_filename": original_filename if original_filename != safe_filename else None
             }
         )
-        
+
         log_file_operation(
             logger,
             "upload",
@@ -369,10 +369,10 @@ async def upload_appimage(
             session_id=session_id,
             success=True
         )
-        
+
         # Check for existing signature info (without verification)
         signature_info = None
-        
+
         try:
             verifier = AppImageVerifier()
             # Just get signature info, don't verify yet
@@ -387,14 +387,14 @@ async def upload_appimage(
                 'has_signature': False,
                 'error': f"Could not read signature: {str(e)}"
             }
-        
+
         return {
             "status": "success",
             "filename": file.filename,
             "size": len(content),
             "signature_info": signature_info
         }
-        
+
     except Exception as e:
         session.error = str(e)
         logger.error(f"Upload failed | session_id={session_id} | error={str(e)}")
@@ -407,31 +407,31 @@ async def upload_key(
     file: UploadFile = File(...)
 ):
     """Upload a GPG private key file"""
-    
+
     if session_id not in sessions:
         logger.warning(f"Key upload with invalid session | session_id={session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     # Save key file
     key_path = TEMP_KEYS_DIR / f"{session_id}_private.key"
-    
+
     try:
         async with aiofiles.open(key_path, 'wb') as out_file:
             content = await file.read()
             await out_file.write(content)
-        
+
         session.key_path = key_path
         session.status = "key_uploaded"
-        
+
         logger.info(f"Private key uploaded | session_id={session_id} | size={len(content)}")
-        
+
         return {
             "status": "success",
             "message": "Key uploaded successfully"
         }
-        
+
     except Exception as e:
         session.error = str(e)
         logger.error(f"Key upload failed | session_id={session_id} | error={str(e)}")
@@ -444,33 +444,33 @@ async def upload_signature(
     file: UploadFile = File(...)
 ):
     """Upload the .asc signature file for the AppImage"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.appimage_path:
         raise HTTPException(status_code=400, detail="Upload AppImage first")
-    
+
     # Save signature file next to AppImage
     signature_path = Path(str(session.appimage_path) + ".asc")
-    
+
     try:
         async with aiofiles.open(signature_path, 'wb') as out_file:
             content = await file.read()
             await out_file.write(content)
-        
+
         # Verify the signature
         verifier = AppImageVerifier()
         result = verifier.verify_signature(str(session.appimage_path))
-        
+
         return {
             "status": "success",
             "message": "Signature uploaded and verified",
             "verification": result
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Signature upload failed: {str(e)}")
 
@@ -485,29 +485,29 @@ async def sign_appimage(
     background_tasks: BackgroundTasks = None
 ):
     """Sign the uploaded AppImage"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.appimage_path:
         raise HTTPException(status_code=400, detail="No AppImage uploaded")
-    
+
     # Security: Warn if passphrase is empty
     if passphrase is not None and len(passphrase.strip()) == 0:
         logger.warning(f"Empty passphrase provided | session_id={session_id}")
         raise HTTPException(
-            status_code=400, 
+            status_code=400,
             detail="Passphrase cannot be empty. If your key has no passphrase, omit the field."
         )
-    
+
     try:
         # Priority 1: Use key_fingerprint if provided (from dropdown selection)
         if key_fingerprint:
             logger.info(f"Using selected key from keyring | session_id={session_id} | fingerprint={key_fingerprint[:16]}...")
             key_id = key_fingerprint
-            
+
         # Priority 2: Import key if uploaded and get fingerprint
         elif session.key_path:
             manager = GPGKeyManager()
@@ -526,36 +526,36 @@ async def sign_appimage(
                 # Key validation failed (e.g., public key instead of private key)
                 logger.error(f"Key validation failed | session_id={session_id} | error={str(e)}")
                 raise HTTPException(
-                    status_code=400, 
+                    status_code=400,
                     detail=f"Invalid key: {str(e)}. Please upload a PRIVATE key, not a PUBLIC key."
                 )
-        
+
         # Priority 3: Use key_id if provided (manual entry)
         # (key_id is already set if provided)
-        
+
         # Check if we have a key_id to use
         if not key_id:
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="No key provided. Please select a key, upload a GPG key, or enter a key ID."
             )
-        
+
         # Initialize resigner
         resigner = AppImageResigner()
-        
+
         # Sign the AppImage
         # Use original filename without session_id prefix since it's already in the session folder
         original_filename = session.appimage_path.name
         # Remove session_id prefix if it exists
         if original_filename.startswith(f"{session_id}_"):
             original_filename = original_filename[len(session_id) + 1:]
-        
+
         output_path = SIGNED_DIR / f"{session_id}_{original_filename}"
         signature_path = Path(str(output_path) + ".asc")
-        
+
         # Copy original to signed directory
         shutil.copy2(session.appimage_path, output_path)
-        
+
         # Sign (passphrase will be used but not stored)
         success = resigner.sign_appimage(
             str(output_path),
@@ -563,24 +563,24 @@ async def sign_appimage(
             passphrase=passphrase,
             embed_signature=embed_signature
         )
-        
+
         # Security: Overwrite passphrase in memory
         if passphrase:
             passphrase = "X" * len(passphrase)
             del passphrase
-        
+
         if success:
             session.signed_path = output_path
             session.signature_path = signature_path
             session.status = "signed"
-            
+
             # Verify signature
             logger.info(f"Verifying signature | session_id={session_id} | embed={embed_signature}")
             verifier = AppImageVerifier()
             verification = verifier.verify_signature(str(output_path))
             logger.info(f"Verification result | session_id={session_id} | valid={verification.get('valid')}")
             session.verification_result = verification
-            
+
             return {
                 "status": "success",
                 "message": "AppImage signed successfully",
@@ -594,7 +594,7 @@ async def sign_appimage(
             session.status = "failed"
             session.error = "Signing failed"
             raise HTTPException(status_code=500, detail="Signing failed")
-            
+
     except Exception as e:
         session.status = "failed"
         session.error = str(e)
@@ -604,27 +604,27 @@ async def sign_appimage(
 @app.post("/api/verify/uploaded/{session_id}")
 async def verify_uploaded_signature(session_id: str):
     """Verify the signature of an uploaded AppImage"""
-    
+
     if session_id not in sessions:
         logger.warning(f"Verify with invalid session | session_id={session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.appimage_path:
         logger.warning(f"Verify without AppImage | session_id={session_id}")
         raise HTTPException(status_code=400, detail="No AppImage uploaded")
-    
+
     try:
         verifier = AppImageVerifier()
         result = verifier.verify_signature(str(session.appimage_path))
         logger.info(f"Signature verified | session_id={session_id} | valid={result.get('valid')}")
-        
+
         return {
             "status": "success",
             "verification": result
         }
-        
+
     except Exception as e:
         import traceback
         traceback.print_exc()
@@ -634,24 +634,24 @@ async def verify_uploaded_signature(session_id: str):
 @app.get("/api/verify/{session_id}")
 async def verify_signature(session_id: str):
     """Verify the signature of a signed AppImage"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.signed_path:
         raise HTTPException(status_code=400, detail="No signed AppImage available")
-    
+
     try:
         verifier = AppImageVerifier()
         result = verifier.verify_signature(str(session.signed_path))
-        
+
         return {
             "status": "success",
             "verification": result
         }
-        
+
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Verification error: {str(e)}")
 
@@ -659,20 +659,20 @@ async def verify_signature(session_id: str):
 @app.get("/api/download/appimage/{session_id}")
 async def download_appimage(session_id: str):
     """Download the signed AppImage"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.signed_path or not session.signed_path.exists():
         raise HTTPException(status_code=404, detail="Signed AppImage not found")
-    
+
     # Remove UUID prefix from filename
     original_filename = session.signed_path.name
     if original_filename.startswith(f"{session_id}_"):
         original_filename = original_filename[len(session_id) + 1:]
-    
+
     return FileResponse(
         session.signed_path,
         media_type="application/octet-stream",
@@ -683,20 +683,20 @@ async def download_appimage(session_id: str):
 @app.get("/api/download/signature/{session_id}")
 async def download_signature(session_id: str):
     """Download the signature file"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.signature_path or not session.signature_path.exists():
         raise HTTPException(status_code=404, detail="Signature file not found")
-    
+
     # Remove UUID prefix from filename
     original_filename = session.signature_path.name
     if original_filename.startswith(f"{session_id}_"):
         original_filename = original_filename[len(session_id) + 1:]
-    
+
     return FileResponse(
         session.signature_path,
         media_type="application/pgp-signature",
@@ -709,50 +709,50 @@ async def download_zip(session_id: str):
     """Download both signed AppImage and signature as ZIP file"""
     import zipfile
     import tempfile
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     if not session.signed_path or not session.signed_path.exists():
         raise HTTPException(status_code=404, detail="Signed AppImage not found")
-    
+
     try:
         # Create temporary ZIP file
         with tempfile.NamedTemporaryFile(mode='w+b', suffix='.zip', delete=False) as tmp_zip:
             zip_path = Path(tmp_zip.name)
-            
+
             with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
                 # Add AppImage
                 appimage_name = session.signed_path.name
                 if appimage_name.startswith(f"{session_id}_"):
                     appimage_name = appimage_name[len(session_id) + 1:]
                 zipf.write(session.signed_path, appimage_name)
-                
+
                 # Add signature if exists
                 if session.signature_path and session.signature_path.exists():
                     sig_name = session.signature_path.name
                     if sig_name.startswith(f"{session_id}_"):
                         sig_name = sig_name[len(session_id) + 1:]
                     zipf.write(session.signature_path, sig_name)
-        
+
         # Get base filename without UUID and extension
         base_name = session.signed_path.stem
         if base_name.startswith(f"{session_id}_"):
             base_name = base_name[len(session_id) + 1:]
-        
+
         zip_filename = f"{base_name}_signed.zip"
-        
+
         logger.info(f"ZIP download | session_id={session_id} | filename={zip_filename}")
-        
+
         return FileResponse(
             zip_path,
             media_type="application/zip",
             filename=zip_filename,
             background=BackgroundTasks().add_task(lambda: zip_path.unlink(missing_ok=True))
         )
-        
+
     except Exception as e:
         logger.error(f"ZIP download failed | session_id={session_id} | error={str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to create ZIP: {str(e)}")
@@ -761,12 +761,12 @@ async def download_zip(session_id: str):
 @app.get("/api/session/{session_id}/status")
 async def get_session_status(session_id: str):
     """Get the current status of a session"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     return {
         "session_id": session_id,
         "status": session.status,
@@ -781,12 +781,12 @@ async def get_session_status(session_id: str):
 @app.delete("/api/session/{session_id}")
 async def delete_session(session_id: str):
     """Delete a session and clean up files"""
-    
+
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     cleanup_session(session_id)
-    
+
     return {"status": "deleted"}
 
 
@@ -798,10 +798,10 @@ async def delete_session(session_id: str):
 async def import_key(key_file: UploadFile = File(...)):
     """
     Import a GPG private key into the keyring.
-    
+
     Args:
         key_file: Private key file (.asc)
-        
+
     Returns:
         JSON with imported key metadata including fingerprint
     """
@@ -809,46 +809,46 @@ async def import_key(key_file: UploadFile = File(...)):
         # Validate file extension
         if not key_file.filename.endswith('.asc'):
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Invalid file format. Only .asc files are allowed."
             )
-        
+
         # Read key content
         key_content = await key_file.read()
         key_content = key_content.decode('utf-8')
-        
+
         logger.info(f"Key import attempt | filename={key_file.filename} | size={len(key_content)} bytes")
-        
+
         # Import key
         from src.key_manager import GPGKeyManager
         manager = GPGKeyManager()
         fingerprint = manager.import_key_from_string(key_content)
-        
+
         if not fingerprint:
             logger.error(f"Key import failed | filename={key_file.filename} | key_preview={key_content[:100]}")
             raise HTTPException(
-                status_code=400, 
+                status_code=400,
                 detail="Failed to import key. Please check the key format."
             )
-        
+
         # Get key metadata
         from src.key_manager import get_key_by_fingerprint
         key_data = get_key_by_fingerprint(fingerprint)
-        
+
         logger.info(
             f"Key imported | "
             f"filename={key_file.filename} | "
             f"fingerprint={fingerprint[:16]}... | "
             f"name={key_data.get('name', 'Unknown')}"
         )
-        
+
         return {
             "success": True,
             "message": "Key imported successfully",
             "fingerprint": fingerprint,
             "key_data": key_data
         }
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -860,23 +860,23 @@ async def import_key(key_file: UploadFile = File(...)):
 async def list_keys():
     """
     List all GPG keys in the keyring.
-    
+
     Returns:
         JSON with public and secret keys, including metadata
     """
     try:
         from src.key_manager import list_all_keys_with_metadata
-        
+
         keys_data = list_all_keys_with_metadata()
-        
+
         logger.info(
             f"Keys listed | "
             f"public_keys={keys_data['total_public']} | "
             f"secret_keys={keys_data['total_secret']}"
         )
-        
+
         return keys_data
-    
+
     except Exception as e:
         logger.error(f"Failed to list keys | error={str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to list keys: {str(e)}")
@@ -886,25 +886,25 @@ async def list_keys():
 async def get_key_details(fingerprint: str):
     """
     Get detailed information about a specific key.
-    
+
     Args:
         fingerprint: Key fingerprint
-        
+
     Returns:
         JSON with key metadata
     """
     try:
         from src.key_manager import get_key_by_fingerprint
-        
+
         key_data = get_key_by_fingerprint(fingerprint)
-        
+
         if not key_data:
             raise HTTPException(status_code=404, detail="Key not found")
-        
+
         logger.info(f"Key details retrieved | fingerprint={fingerprint[:16]}...")
-        
+
         return key_data
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -916,19 +916,19 @@ async def get_key_details(fingerprint: str):
 async def delete_key(fingerprint: str, delete_secret: bool = False):
     """
     Delete a key from the keyring.
-    
+
     Args:
         fingerprint: Key fingerprint to delete
         delete_secret: If true, also delete secret key
-        
+
     Returns:
         JSON with success status
     """
     try:
         from src.key_manager import delete_key_by_fingerprint
-        
+
         result = delete_key_by_fingerprint(fingerprint, delete_secret)
-        
+
         if result['success']:
             logger.info(
                 f"Key deleted | "
@@ -943,7 +943,7 @@ async def delete_key(fingerprint: str, delete_secret: bool = False):
                 f"error={result.get('error')}"
             )
             raise HTTPException(status_code=400, detail=result.get('error', 'Unknown error'))
-    
+
     except HTTPException:
         raise
     except Exception as e:
@@ -964,19 +964,19 @@ async def init_chunked_upload(
 ):
     """
     Initialize a chunked upload session for large files.
-    
+
     Args:
         session_id: Signing session ID
         filename: Original filename
         total_size: Total file size in bytes
         file_type: Type of file (appimage, key, signature)
-        
+
     Returns:
         Upload session info with chunk details
     """
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     try:
         upload_info = await StreamingUpload.init_upload(
             session_id=session_id,
@@ -984,9 +984,9 @@ async def init_chunked_upload(
             total_size=total_size,
             file_type=file_type
         )
-        
+
         return upload_info
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1006,30 +1006,30 @@ async def upload_chunk(
 ):
     """
     Upload a single file chunk.
-    
+
     Args:
         session_id: Upload session ID
         chunk_number: Chunk number (0-indexed) as string
         checksum: Optional MD5/SHA-256 checksum for verification
         chunk: Chunk binary data
-        
+
     Returns:
         Chunk upload status with progress
     """
     try:
         # Convert chunk_number to int
         chunk_num = int(chunk_number)
-        
+
         logger.info(
             f"Chunk upload request | session_id={session_id} | "
             f"chunk_number={chunk_num} | checksum={checksum[:16] if checksum else 'none'}..."
         )
-        
+
         # Read chunk data
         chunk_data = await chunk.read()
-        
+
         logger.info(f"Chunk data read | size={len(chunk_data)} bytes")
-        
+
         # Upload chunk
         result = await StreamingUpload.upload_chunk(
             session_id=session_id,
@@ -1037,9 +1037,9 @@ async def upload_chunk(
             chunk_data=chunk_data,
             checksum=checksum
         )
-        
+
         return result
-        
+
     except HTTPException as he:
         logger.error(
             f"HTTP Exception in chunk upload | session_id={session_id} | "
@@ -1061,37 +1061,37 @@ async def complete_chunked_upload(
 ):
     """
     Complete chunked upload and merge chunks into final file.
-    
+
     Args:
         session_id: Upload session ID
         file_type: Type of file (appimage, key, signature)
-        
+
     Returns:
         Upload completion status with file info
     """
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
-    
+
     session = sessions[session_id]
-    
+
     try:
         # Determine target directory based on file type
         if file_type == "key":
             target_dir = TEMP_KEYS_DIR
         else:
             target_dir = UPLOAD_DIR
-        
+
         # Complete upload
         final_path = await StreamingUpload.complete_upload(
             session_id=session_id,
             target_dir=target_dir
         )
-        
+
         # Update session with file path
         if file_type == "appimage":
             session.appimage_path = final_path
             session.status = "appimage_uploaded"
-            
+
             # Validate AppImage
             is_valid, error_msg = validate_appimage_file(
                 final_path,
@@ -1099,11 +1099,11 @@ async def complete_chunked_upload(
                 check_elf=True,
                 check_appimage=True
             )
-            
+
             if not is_valid:
                 final_path.unlink(missing_ok=True)
                 raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
-            
+
             # Get signature info
             try:
                 verifier = AppImageVerifier()
@@ -1113,31 +1113,31 @@ async def complete_chunked_upload(
                     'has_signature': False,
                     'error': f"Could not read signature: {str(e)}"
                 }
-            
+
             return {
                 "status": "success",
                 "filename": final_path.name,
                 "size": final_path.stat().st_size,
                 "signature_info": signature_info
             }
-            
+
         elif file_type == "key":
             session.key_path = final_path
             session.status = "key_uploaded"
-            
+
             return {
                 "status": "success",
                 "message": "Key uploaded successfully",
                 "size": final_path.stat().st_size
             }
-        
+
         else:
             return {
                 "status": "success",
                 "filename": final_path.name,
                 "size": final_path.stat().st_size
             }
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -1151,10 +1151,10 @@ async def complete_chunked_upload(
 async def get_upload_status(session_id: str):
     """
     Get status of chunked upload.
-    
+
     Args:
         session_id: Upload session ID
-        
+
     Returns:
         Upload progress and status
     """

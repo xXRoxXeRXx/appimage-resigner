@@ -36,13 +36,13 @@ class SigningStatus(str, Enum):
 # Request Models
 class SignRequest(BaseModel):
     """Request model for signing an AppImage."""
-    
+
     model_config = ConfigDict(
         str_strip_whitespace=True,
         validate_assignment=True,
         use_enum_values=True,
     )
-    
+
     session_id: str = Field(
         ...,
         description="Unique session identifier",
@@ -50,7 +50,7 @@ class SignRequest(BaseModel):
         max_length=128,
         pattern=r'^[a-f0-9\-]+$'
     )
-    
+
     key_id: Optional[str] = Field(
         None,
         description="GPG key ID to use for signing (optional if importing key)",
@@ -58,18 +58,18 @@ class SignRequest(BaseModel):
         max_length=40,
         pattern=r'^[A-F0-9]+$'
     )
-    
+
     passphrase: str = Field(
         "",
         description="Passphrase for the GPG key (can be empty for keys without passphrase)",
         max_length=1024
     )
-    
+
     embed_signature: bool = Field(
         True,
         description="Whether to embed signature in AppImage or create detached .asc file"
     )
-    
+
     @field_validator('key_id')
     @classmethod
     def normalize_key_id(cls, v: Optional[str]) -> Optional[str]:
@@ -77,7 +77,7 @@ class SignRequest(BaseModel):
         if v:
             return v.upper().strip()
         return v
-    
+
     @model_validator(mode='after')
     def validate_sign_request(self) -> 'SignRequest':
         """Validate that we have either a key_id or will import a key."""
@@ -87,12 +87,12 @@ class SignRequest(BaseModel):
 
 class VerifyRequest(BaseModel):
     """Request model for verifying an AppImage signature."""
-    
+
     model_config = ConfigDict(
         str_strip_whitespace=True,
         validate_assignment=True,
     )
-    
+
     session_id: str = Field(
         ...,
         description="Unique session identifier",
@@ -100,7 +100,7 @@ class VerifyRequest(BaseModel):
         max_length=128,
         pattern=r'^[a-f0-9\-]+$'
     )
-    
+
     import_key: bool = Field(
         False,
         description="Whether to import the public key from uploaded key file"
@@ -109,12 +109,12 @@ class VerifyRequest(BaseModel):
 
 class KeyImportRequest(BaseModel):
     """Request model for importing a GPG key."""
-    
+
     model_config = ConfigDict(
         str_strip_whitespace=True,
         validate_assignment=True,
     )
-    
+
     session_id: str = Field(
         ...,
         description="Unique session identifier",
@@ -122,7 +122,7 @@ class KeyImportRequest(BaseModel):
         max_length=128,
         pattern=r'^[a-f0-9\-]+$'
     )
-    
+
     key_type: str = Field(
         "public",
         description="Type of key to import",
@@ -133,7 +133,7 @@ class KeyImportRequest(BaseModel):
 # Response Models
 class UploadResponse(BaseModel):
     """Response model for file upload."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -144,7 +144,7 @@ class UploadResponse(BaseModel):
             }
         }
     )
-    
+
     session_id: str = Field(..., description="Unique session identifier")
     filename: str = Field(..., description="Original filename")
     size: int = Field(..., description="File size in bytes", ge=0)
@@ -156,7 +156,7 @@ class UploadResponse(BaseModel):
 
 class SigningResponse(BaseModel):
     """Response model for signing operation."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -170,7 +170,7 @@ class SigningResponse(BaseModel):
             }
         }
     )
-    
+
     status: SigningStatus = Field(..., description="Signing operation status")
     session_id: str = Field(..., description="Session identifier")
     filename: str = Field(..., description="Signed AppImage filename")
@@ -190,7 +190,7 @@ class SigningResponse(BaseModel):
 
 class VerificationResponse(BaseModel):
     """Response model for signature verification."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -205,7 +205,7 @@ class VerificationResponse(BaseModel):
             }
         }
     )
-    
+
     status: SignatureStatus = Field(..., description="Verification status")
     filename: str = Field(..., description="Verified filename")
     signed_by: Optional[str] = Field(None, description="Signer identity")
@@ -223,7 +223,7 @@ class VerificationResponse(BaseModel):
 
 class KeyInfo(BaseModel):
     """Information about a GPG key."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -238,7 +238,7 @@ class KeyInfo(BaseModel):
             }
         }
     )
-    
+
     key_id: str = Field(..., description="Key ID")
     fingerprint: str = Field(..., description="Key fingerprint")
     uids: List[str] = Field(default_factory=list, description="User IDs")
@@ -248,7 +248,7 @@ class KeyInfo(BaseModel):
     expiration_date: Optional[datetime] = Field(None, description="Expiration date")
     trust: Optional[str] = Field(None, description="Trust level")
     has_secret: bool = Field(False, description="Whether secret key is available")
-    
+
     @field_validator('fingerprint')
     @classmethod
     def normalize_fingerprint(cls, v: str) -> str:
@@ -261,7 +261,7 @@ class KeyInfo(BaseModel):
 
 class KeyListResponse(BaseModel):
     """Response model for listing GPG keys."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -276,14 +276,14 @@ class KeyListResponse(BaseModel):
             }
         }
     )
-    
+
     keys: List[KeyInfo] = Field(default_factory=list, description="List of keys")
     count: int = Field(..., description="Number of keys", ge=0)
 
 
 class HealthResponse(BaseModel):
     """Response model for health check endpoint."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -297,7 +297,7 @@ class HealthResponse(BaseModel):
             }
         }
     )
-    
+
     status: str = Field(..., description="Health status")
     version: str = Field(..., description="Application version")
     gpg_available: bool = Field(..., description="Whether GPG is available")
@@ -315,7 +315,7 @@ class HealthResponse(BaseModel):
 
 class ErrorResponse(BaseModel):
     """Standard error response model."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -326,7 +326,7 @@ class ErrorResponse(BaseModel):
             }
         }
     )
-    
+
     error: str = Field(..., description="Error message")
     detail: Optional[str] = Field(None, description="Detailed error information")
     status_code: int = Field(..., description="HTTP status code", ge=100, lt=600)
@@ -339,7 +339,7 @@ class ErrorResponse(BaseModel):
 
 class SessionInfoResponse(BaseModel):
     """Response model for session information."""
-    
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
@@ -352,7 +352,7 @@ class SessionInfoResponse(BaseModel):
             }
         }
     )
-    
+
     session_id: str = Field(..., description="Session identifier")
     created_at: datetime = Field(..., description="Session creation time")
     expires_at: datetime = Field(..., description="Session expiration time")
@@ -366,7 +366,7 @@ class SessionInfoResponse(BaseModel):
 # Utility Models
 class FileMetadata(BaseModel):
     """Metadata about an uploaded file."""
-    
+
     filename: str = Field(..., description="Original filename")
     size: int = Field(..., description="File size in bytes", ge=0)
     mime_type: Optional[str] = Field(None, description="MIME type")
@@ -376,7 +376,7 @@ class FileMetadata(BaseModel):
         default_factory=datetime.now,
         description="Upload timestamp"
     )
-    
+
     @field_validator('size')
     @classmethod
     def validate_size(cls, v: int) -> int:
@@ -388,7 +388,7 @@ class FileMetadata(BaseModel):
 
 class AppImageInfo(BaseModel):
     """Information extracted from an AppImage file."""
-    
+
     filename: str = Field(..., description="AppImage filename")
     size: int = Field(..., description="File size in bytes", ge=0)
     elf_class: Optional[str] = Field(None, description="ELF class (32-bit or 64-bit)")

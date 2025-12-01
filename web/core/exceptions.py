@@ -9,7 +9,7 @@ from fastapi import HTTPException, status
 
 class AppImageResigerException(Exception):
     """Base exception for all application-specific errors."""
-    
+
     def __init__(
         self,
         message: str,
@@ -20,7 +20,7 @@ class AppImageResigerException(Exception):
         self.status_code = status_code
         self.details = details or {}
         super().__init__(self.message)
-    
+
     def to_http_exception(self) -> HTTPException:
         """Convert to FastAPI HTTPException."""
         return HTTPException(
@@ -34,7 +34,7 @@ class AppImageResigerException(Exception):
 
 class SessionNotFoundError(AppImageResigerException):
     """Raised when a session ID is not found."""
-    
+
     def __init__(self, session_id: str):
         super().__init__(
             message=f"Session not found: {session_id}",
@@ -45,7 +45,7 @@ class SessionNotFoundError(AppImageResigerException):
 
 class SessionExpiredError(AppImageResigerException):
     """Raised when a session has expired."""
-    
+
     def __init__(self, session_id: str):
         super().__init__(
             message=f"Session expired: {session_id}",
@@ -56,7 +56,7 @@ class SessionExpiredError(AppImageResigerException):
 
 class InvalidAppImageError(AppImageResigerException):
     """Raised when an uploaded file is not a valid AppImage."""
-    
+
     def __init__(self, filename: str, reason: str):
         super().__init__(
             message=f"Invalid AppImage file: {filename}",
@@ -67,7 +67,7 @@ class InvalidAppImageError(AppImageResigerException):
 
 class FileTooLargeError(AppImageResigerException):
     """Raised when an uploaded file exceeds size limits."""
-    
+
     def __init__(self, filename: str, size: int, max_size: int):
         super().__init__(
             message=f"File too large: {filename}",
@@ -84,7 +84,7 @@ class FileTooLargeError(AppImageResigerException):
 
 class GPGKeyNotFoundError(AppImageResigerException):
     """Raised when a GPG key is not found."""
-    
+
     def __init__(self, key_id: str):
         super().__init__(
             message=f"GPG key not found: {key_id}",
@@ -95,7 +95,7 @@ class GPGKeyNotFoundError(AppImageResigerException):
 
 class GPGSigningError(AppImageResigerException):
     """Raised when GPG signing fails."""
-    
+
     def __init__(self, reason: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(
             message=f"GPG signing failed: {reason}",
@@ -106,7 +106,7 @@ class GPGSigningError(AppImageResigerException):
 
 class GPGVerificationError(AppImageResigerException):
     """Raised when GPG verification fails."""
-    
+
     def __init__(self, reason: str, details: Optional[Dict[str, Any]] = None):
         super().__init__(
             message=f"GPG verification failed: {reason}",
@@ -117,7 +117,7 @@ class GPGVerificationError(AppImageResigerException):
 
 class GPGKeyImportError(AppImageResigerException):
     """Raised when GPG key import fails."""
-    
+
     def __init__(self, reason: str):
         super().__init__(
             message=f"GPG key import failed: {reason}",
@@ -128,7 +128,7 @@ class GPGKeyImportError(AppImageResigerException):
 
 class FileOperationError(AppImageResigerException):
     """Raised when a file operation fails."""
-    
+
     def __init__(self, operation: str, path: str, reason: str):
         super().__init__(
             message=f"File {operation} failed: {path}",
@@ -143,7 +143,7 @@ class FileOperationError(AppImageResigerException):
 
 class MissingFileError(AppImageResigerException):
     """Raised when a required file is missing."""
-    
+
     def __init__(self, file_type: str, session_id: str):
         super().__init__(
             message=f"Missing {file_type} file for session: {session_id}",
@@ -157,7 +157,7 @@ class MissingFileError(AppImageResigerException):
 
 class InvalidPassphraseError(AppImageResigerException):
     """Raised when GPG passphrase is incorrect."""
-    
+
     def __init__(self, key_id: str):
         super().__init__(
             message=f"Invalid passphrase for key: {key_id}",
@@ -168,7 +168,7 @@ class InvalidPassphraseError(AppImageResigerException):
 
 class ConfigurationError(AppImageResigerException):
     """Raised when there's a configuration error."""
-    
+
     def __init__(self, parameter: str, reason: str):
         super().__init__(
             message=f"Configuration error: {parameter}",
@@ -182,7 +182,7 @@ class ConfigurationError(AppImageResigerException):
 
 class GPGNotAvailableError(AppImageResigerException):
     """Raised when GPG is not available on the system."""
-    
+
     def __init__(self):
         super().__init__(
             message="GPG is not available on this system",
