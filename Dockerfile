@@ -9,6 +9,7 @@ LABEL version="2.0.0"
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gnupg \
     ca-certificates \
+    gosu \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
@@ -30,11 +31,18 @@ RUN mkdir -p uploads signed temp_keys logs && \
 COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser web/ ./web/
 
+# Copy and set executable permission for entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Ensure permissions are correct after copy (in case web/ contains logs/)
 RUN chown -R appuser:appuser uploads signed temp_keys logs
 
 # Switch to non-root user
 USER appuser
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 
 # Expose port
 EXPOSE 8000

@@ -65,22 +65,44 @@ def setup_logging(
     
     # File handler with rotation
     if log_to_file:
-        # Rotate log files: max 10 files, 10 MB each
-        file_handler = logging.handlers.RotatingFileHandler(
-            LOG_FILE,
-            maxBytes=10 * 1024 * 1024,  # 10 MB
-            backupCount=10,
-            encoding='utf-8'
-        )
-        file_handler.setLevel(level)
-        file_handler.setFormatter(formatter)
-        root_logger.addHandler(file_handler)
+        try:
+            # Ensure log directory exists and is writable
+            log_dir = Path(LOG_FILE).parent
+            log_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Rotate log files: max 10 files, 10 MB each
+            file_handler = logging.handlers.RotatingFileHandler(
+                LOG_FILE,
+                maxBytes=10 * 1024 * 1024,  # 10 MB
+                backupCount=10,
+                encoding='utf-8'
+            )
+            file_handler.setLevel(level)
+            file_handler.setFormatter(formatter)
+            root_logger.addHandler(file_handler)
+        except (PermissionError, OSError) as e:
+            # Log to console if file logging fails
+            warning_msg = f"WARNING: Could not create log file {LOG_FILE}: {e}"
+            if log_to_console:
+                root_logger.warning(warning_msg)
+                root_logger.warning("Continuing with console logging only")
+            else:
+                # Enable console logging as fallback
+                console_handler = logging.StreamHandler(sys.stdout)
+                console_handler.setLevel(level)
+                console_handler.setFormatter(formatter)
+                root_logger.addHandler(console_handler)
+                root_logger.warning(warning_msg)
+                root_logger.warning("Enabled console logging as fallback")
     
     # Log startup message
     root_logger.info("=" * 80)
     root_logger.info("AppImage Re-Signer - Logging initialized")
     root_logger.info(f"Log level: {logging.getLevelName(level)}")
-    root_logger.info(f"Log file: {LOG_FILE}")
+    if log_to_file:
+        root_logger.info(f"Log file: {LOG_FILE}")
+    else:
+        root_logger.info("File logging: Disabled")
     root_logger.info("=" * 80)
     
     return root_logger
