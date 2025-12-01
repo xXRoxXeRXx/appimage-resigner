@@ -141,11 +141,11 @@
         </button>
 
         <header>
-            <a href="/static/index.html" class="back-link">
+            <a href="/static/index.html" class="back-link" data-i18n="keys.backButton">
                 ← Zurück zum Re-Signer
             </a>
-            <h1>🔐 GPG Key Management</h1>
-            <p class="subtitle">Verwalten Sie Ihre GPG-Schlüssel</p>
+            <h1 data-i18n="keys.title">🔐 GPG Key Management</h1>
+            <p class="subtitle" data-i18n="keys.subtitle">Verwalten Sie Ihre GPG-Schlüssel</p>
         </header>
 
         <main>
@@ -153,17 +153,17 @@
             <section class="card">
                 <div class="step-header">
                     <span class="step-number">📥</span>
-                    <h2>Key Importieren</h2>
+                    <h2 data-i18n="keys.importSection.title">Key Importieren</h2>
                 </div>
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">
-                    Importieren Sie einen privaten GPG-Schlüssel (.asc) in den Keyring.
-                    Dieser kann dann beim Signieren ausgewählt werden.
+                    <span data-i18n="keys.importSection.description">Importieren Sie einen privaten GPG-Schlüssel (.asc) in den Keyring.</span>
+                    <span data-i18n="keys.importSection.descriptionDetails">Dieser kann dann beim Signieren ausgewählt werden.</span>
                 </p>
 
                 <div class="upload-area" id="key-upload-area">
                     <div class="upload-icon">🔑</div>
-                    <h3>Private Key hochladen</h3>
-                    <p>Ziehen Sie eine .asc Datei hierher oder klicken Sie zum Auswählen</p>
+                    <h3 data-i18n="keys.importSection.uploadTitle">Private Key hochladen</h3>
+                    <p data-i18n="keys.importSection.dropzone">Ziehen Sie eine .asc Datei hierher oder klicken Sie zum Auswählen</p>
                     <input type="file" id="key-file-input" accept=".asc" style="display: none;">
                 </div>
 
@@ -179,13 +179,13 @@
             <section class="card">
                 <div class="step-header">
                     <span class="step-number">🔑</span>
-                    <h2>Verfügbare Keys</h2>
+                    <h2 data-i18n="keys.listSection.title">Verfügbare Keys</h2>
                 </div>
 
                 <div id="loading" style="text-align: center; padding: 40px;">
                     <div class="spinner-container">
                         <div class="spinner"></div>
-                        <p>Lade Keys...</p>
+                        <p data-i18n="keys.listSection.loading">Lade Keys...</p>
                     </div>
                 </div>
 
@@ -193,8 +193,8 @@
 
                 <div id="empty-state" class="empty-state" style="display: none;">
                     <div class="empty-state-icon">🔑</div>
-                    <h3>Keine Keys gefunden</h3>
-                    <p>Importieren Sie einen Key über das Upload-Feld oben</p>
+                    <h3 data-i18n="keys.listSection.empty">Keine Keys gefunden</h3>
+                    <p data-i18n="keys.listSection.emptyDescription">Importieren Sie einen Key über das Upload-Feld oben</p>
                 </div>
             </section>
         </main>
@@ -267,7 +267,7 @@
 
         async function importKey(file) {
             if (!file.name.endsWith('.asc')) {
-                toast.error('Bitte wählen Sie eine .asc Datei aus');
+                toast.error(window.t('keys.messages.invalidFile'));
                 return;
             }
 
@@ -287,7 +287,7 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    toast.success(`Key erfolgreich importiert: ${result.key_data.name || 'Unknown'}`);
+                    toast.success(window.t('keys.messages.uploadSuccess', { name: result.key_data.name || 'Unknown' }));
                     
                     // Reload keys
                     document.getElementById('key-list').innerHTML = '';
@@ -299,7 +299,7 @@
                 }
             } catch (error) {
                 console.error('Import error:', error);
-                toast.error('Fehler beim Importieren des Keys');
+                toast.error(window.t('keys.messages.uploadError'));
             } finally {
                 // Reset upload area
                 keyUploadArea.style.display = 'flex';
@@ -331,9 +331,14 @@
                     keyList.appendChild(keyCard);
                 });
                 
+                // Update i18n for dynamically created elements
+                if (window.updateTranslations) {
+                    window.updateTranslations();
+                }
+                
             } catch (error) {
                 console.error('Failed to load keys:', error);
-                toast.error('Fehler beim Laden der Keys');
+                toast.error(window.t('keys.messages.loadError'));
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('empty-state').style.display = 'block';
             }
@@ -388,7 +393,7 @@
                 <div class="key-actions">
                     <button class="btn-danger" onclick="deleteKey('${key.fingerprint}', ${key.is_secret})">
                         <span>🗑️</span>
-                        <span>Löschen</span>
+                        <span data-i18n="keys.listSection.deleteButton">Löschen</span>
                     </button>
                 </div>
             `;
@@ -397,7 +402,7 @@
         }
 
         async function deleteKey(fingerprint, isSecret) {
-            if (!confirm(`Möchten Sie diesen Key wirklich löschen?\n\nFingerprint: ${fingerprint.substring(0, 16)}...`)) {
+            if (!confirm(window.t('keys.messages.deleteConfirm', { fingerprint: fingerprint.substring(0, 16) }))) {
                 return;
             }
             
@@ -407,18 +412,18 @@
                 });
                 
                 if (response.ok) {
-                    toast.success('Key erfolgreich gelöscht');
+                    toast.success(window.t('keys.messages.deleteSuccess'));
                     // Reload keys
                     document.getElementById('key-list').innerHTML = '';
                     document.getElementById('loading').style.display = 'block';
                     loadKeys();
                 } else {
                     const error = await response.json();
-                    toast.error(`Fehler beim Löschen: ${error.detail}`);
+                    toast.error(window.t('keys.messages.deleteError', { error: error.detail }));
                 }
             } catch (error) {
                 console.error('Delete error:', error);
-                toast.error('Fehler beim Löschen des Keys');
+                toast.error(window.t('keys.messages.deleteError', { error: error.message }));
             }
         }
 

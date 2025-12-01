@@ -423,7 +423,6 @@ async function uploadAppImage(file) {
         // Automatically choose upload method based on file size
         if (file.size > CHUNKED_THRESHOLD) {
             console.log(`Large file detected (${formatFileSize(file.size)}), using chunked upload`);
-            toast.info(`📦 Große Datei - verwende optimierten Upload...`);
             data = await uploadAppImageChunked(file);
         } else {
             console.log(`Using regular upload for ${formatFileSize(file.size)} file`);

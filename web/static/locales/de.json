@@ -29,7 +29,9 @@
     "keyIdHelp": "z.B. C407155E5D49FE6B",
     "keyIdSystem": "Key muss bereits im System GPG Keyring vorhanden sein",
     "embedSignature": "Signatur in Appimage einbetten",
-    "embedSignatureHelp": "Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur"
+    "embedSignatureHelp": "Erstellt sowohl eine .asc Datei als auch eine eingebettete Signatur",
+    "keyManagement": "Keys können in der",
+    "keyManagementImported": "importiert werden"
   },
   "step3": {
     "title": "Signieren",
@@ -103,5 +105,43 @@
     "select": "Sprache wählen",
     "de": "Deutsch",
     "en": "English"
+  },
+  "keys": {
+    "title": "🔑 GPG Key Management",
+    "backButton": "← Zurück zum Re-Signer",
+    "subtitle": "Verwalten Sie Ihre GPG-Schlüssel",
+    "importSection": {
+      "title": "Key importieren",
+      "description": "Importieren Sie einen privaten GPG-Schlüssel (.asc) in den Keyring.",
+      "descriptionDetails": "Dieser kann dann beim Signieren ausgewählt werden.",
+      "uploadTitle": "Private Key hochladen",
+      "dropzone": "Ziehen Sie eine .asc Datei hierher oder klicken Sie zum Auswählen",
+      "passphrase": "Passphrase (optional)",
+      "importButton": "Key importieren"
+    },
+    "listSection": {
+      "title": "Verfügbare Keys",
+      "loading": "Lade Keys...",
+      "empty": "Keine Keys vorhanden",
+      "emptyDescription": "Importieren Sie einen Key über das Upload-Feld oben",
+      "deleteButton": "Löschen"
+    },
+    "messages": {
+      "invalidFile": "Bitte wählen Sie eine .asc Datei aus",
+      "uploadSuccess": "Key erfolgreich importiert: {name}",
+      "uploadError": "Fehler beim Importieren des Keys",
+      "loadError": "Fehler beim Laden der Keys",
+      "deleteConfirm": "Möchten Sie diesen Key wirklich löschen?\n\nFingerprint: {fingerprint}...",
+      "deleteSuccess": "Key erfolgreich gelöscht",
+      "deleteError": "Fehler beim Löschen: {error}"
+    }
+  },
+  "keySelect": {
+    "tabSelect": "Vorhandenen Key wählen",
+    "tabUpload": "Neuen Key hochladen",
+    "tabKeyId": "Key-ID verwenden",
+    "label": "Gespeicherten Key auswählen:",
+    "placeholder": "Key auswählen...",
+    "manageKeys": "⚙️ Keys verwalten"
   }
 }
