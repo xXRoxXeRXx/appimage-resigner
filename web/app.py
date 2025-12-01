@@ -534,12 +534,15 @@ async def download_appimage(session_id: str):
     if not session.signed_path or not session.signed_path.exists():
         raise HTTPException(status_code=404, detail="Signed AppImage not found")
     
-    # Don't cleanup yet - user might want to download signature too
+    # Remove UUID prefix from filename
+    original_filename = session.signed_path.name
+    if original_filename.startswith(f"{session_id}_"):
+        original_filename = original_filename[len(session_id) + 1:]
     
     return FileResponse(
         session.signed_path,
         media_type="application/octet-stream",
-        filename=session.signed_path.name
+        filename=original_filename
     )
 
 
@@ -555,11 +558,70 @@ async def download_signature(session_id: str):
     if not session.signature_path or not session.signature_path.exists():
         raise HTTPException(status_code=404, detail="Signature file not found")
     
+    # Remove UUID prefix from filename
+    original_filename = session.signature_path.name
+    if original_filename.startswith(f"{session_id}_"):
+        original_filename = original_filename[len(session_id) + 1:]
+    
     return FileResponse(
         session.signature_path,
         media_type="application/pgp-signature",
-        filename=session.signature_path.name
+        filename=original_filename
     )
+
+
+@app.get("/api/download/zip/{session_id}")
+async def download_zip(session_id: str):
+    """Download both signed AppImage and signature as ZIP file"""
+    import zipfile
+    import tempfile
+    
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = sessions[session_id]
+    
+    if not session.signed_path or not session.signed_path.exists():
+        raise HTTPException(status_code=404, detail="Signed AppImage not found")
+    
+    try:
+        # Create temporary ZIP file
+        with tempfile.NamedTemporaryFile(mode='w+b', suffix='.zip', delete=False) as tmp_zip:
+            zip_path = Path(tmp_zip.name)
+            
+            with zipfile.ZipFile(zip_path, 'w', zipfile.ZIP_DEFLATED) as zipf:
+                # Add AppImage
+                appimage_name = session.signed_path.name
+                if appimage_name.startswith(f"{session_id}_"):
+                    appimage_name = appimage_name[len(session_id) + 1:]
+                zipf.write(session.signed_path, appimage_name)
+                
+                # Add signature if exists
+                if session.signature_path and session.signature_path.exists():
+                    sig_name = session.signature_path.name
+                    if sig_name.startswith(f"{session_id}_"):
+                        sig_name = sig_name[len(session_id) + 1:]
+                    zipf.write(session.signature_path, sig_name)
+        
+        # Get base filename without UUID and extension
+        base_name = session.signed_path.stem
+        if base_name.startswith(f"{session_id}_"):
+            base_name = base_name[len(session_id) + 1:]
+        
+        zip_filename = f"{base_name}_signed.zip"
+        
+        logger.info(f"ZIP download | session_id={session_id} | filename={zip_filename}")
+        
+        return FileResponse(
+            zip_path,
+            media_type="application/zip",
+            filename=zip_filename,
+            background=BackgroundTasks().add_task(lambda: zip_path.unlink(missing_ok=True))
+        )
+        
+    except Exception as e:
+        logger.error(f"ZIP download failed | session_id={session_id} | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create ZIP: {str(e)}")
 
 
 @app.get("/api/session/{session_id}/status")

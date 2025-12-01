@@ -7,16 +7,21 @@ Verifies GPG signatures of AppImage files.
 import sys
 import os
 import argparse
-import gnupg
+import gnupg  # type: ignore[import]
 import shutil
 import base64
 import struct
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, Dict, Any, Tuple
 
 
-def find_gpg_binary():
-    """Find GPG binary on the system."""
+def find_gpg_binary() -> Optional[str]:
+    """Find GPG binary on the system.
+    
+    Returns:
+        Path to GPG binary if found, None otherwise
+    """
     # Common GPG locations on Windows
     gpg_paths = [
         r"C:\Program Files (x86)\GnuPG\bin\gpg.exe",
@@ -41,12 +46,14 @@ def find_gpg_binary():
 class AppImageVerifier:
     """Class for verifying AppImage signatures."""
     
-    def __init__(self, gpg_home=None):
+    gpg: gnupg.GPG
+    
+    def __init__(self, gpg_home: Optional[str] = None) -> None:
         """
         Initialize the verifier.
         
         Args:
-            gpg_home (str): Path to GPG home directory. Defaults to ~/.gnupg
+            gpg_home: Path to GPG home directory. Defaults to ~/.gnupg
         """
         gpg_binary = find_gpg_binary()
         if gpg_binary:
@@ -54,16 +61,16 @@ class AppImageVerifier:
         else:
             self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
     
-    def get_signature_info(self, appimage_path):
+    def get_signature_info(self, appimage_path: str) -> Dict[str, Any]:
         """
         Get information about a signature without verifying it.
         Just checks if a signature exists and extracts basic info + metadata.
         
         Args:
-            appimage_path (str): Path to the AppImage file
+            appimage_path: Path to the AppImage file
             
         Returns:
-            dict: Signature information (has_signature, type, signature_data, metadata)
+            Signature information (has_signature, type, signature_data, metadata)
         """
         appimage_path = Path(appimage_path)
         
@@ -128,16 +135,16 @@ class AppImageVerifier:
                 'error': f"Error reading signature: {str(e)}"
             }
     
-    def extract_embedded_signature(self, appimage_path):
+    def extract_embedded_signature(self, appimage_path: str) -> Optional[Dict[str, Any]]:
         """
         Extract embedded signature from AppImage file.
         AppImages can have their signature embedded at the end of the file.
         
         Args:
-            appimage_path (str): Path to the AppImage file
+            appimage_path: Path to the AppImage file
             
         Returns:
-            dict: Signature information or None if no signature found
+            Signature information or None if no signature found
         """
         appimage_path = Path(appimage_path)
         
@@ -246,17 +253,21 @@ class AppImageVerifier:
                 'error': f"Could not extract signature: {str(e)}"
             }
     
-    def verify_signature(self, appimage_path, signature_path=None):
+    def verify_signature(
+        self,
+        appimage_path: str,
+        signature_path: Optional[str] = None
+    ) -> Dict[str, Any]:
         """
         Verify the GPG signature of an AppImage.
         
         Args:
-            appimage_path (str): Path to the AppImage file
-            signature_path (str): Path to the .asc signature file.
-                                If None, tries embedded signature first, then looks for .asc
+            appimage_path: Path to the AppImage file
+            signature_path: Path to the .asc signature file.
+                           If None, tries embedded signature first, then looks for .asc
         
         Returns:
-            dict: Verification result with keys:
+            Verification result with keys:
                 - valid (bool): True if signature is valid
                 - key_id (str): ID of the signing key
                 - username (str): Name associated with the key
@@ -325,13 +336,13 @@ class AppImageVerifier:
                 'traceback': traceback.format_exc()
             }
     
-    def print_verification_result(self, result, appimage_path):
+    def print_verification_result(self, result: Dict[str, Any], appimage_path: str) -> None:
         """
         Pretty print verification results.
         
         Args:
-            result (dict): Verification result from verify_signature()
-            appimage_path (str): Path to the AppImage file
+            result: Verification result from verify_signature()
+            appimage_path: Path to the AppImage file
         """
         print("=" * 60)
         print(f"AppImage Signature Verification")
@@ -361,7 +372,7 @@ class AppImageVerifier:
         print("=" * 60)
 
 
-def main():
+def main() -> None:
     """Command-line interface for AppImage signature verification."""
     parser = argparse.ArgumentParser(
         description="Verify GPG signatures of AppImage files"
