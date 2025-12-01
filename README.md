@@ -1,20 +1,47 @@
 # AppImage Re-Signer
 
-Ein Python-Tool zum Entfernen und Hinzufügen von GPG-Signaturen bei Linux AppImage-Dateien.
+🔐 Ein Python-Tool und Web-Interface zum Entfernen und Hinzufügen von GPG-Signaturen bei Linux AppImage-Dateien.
 
 ## 🎯 Projektübersicht
 
-Dieses Tool löst das Problem, wenn AppImages aus automatisierten Build-Prozessen stammen und mit einer eigenen GPG-Signatur versehen werden müssen. Es ermöglicht das Re-Signieren von AppImages in wenigen Schritten.
+Dieses Tool löst das Problem, wenn AppImages aus automatisierten Build-Prozessen stammen und mit einer eigenen GPG-Signatur versehen werden müssen. Es ermöglicht das Re-Signieren von AppImages in wenigen Schritten - sowohl über CLI als auch über ein modernes Web-Interface.
 
-## ✨ Features
+##  ✨ Features
 
+### Core Features
 - ✅ Entfernen bestehender GPG-Signaturen von AppImages
 - ✅ Signieren von AppImages mit eigenem GPG-Key
 - ✅ Detached ASCII-Armor Signaturen (.asc Dateien)
+- ✅ Embedded Signatures (direkt in AppImage eingebettet)
 - ✅ Verifizierung von AppImage-Signaturen
 - ✅ GPG Key Management (Generierung, Import, Export)
 - ✅ CLI und programmatische Nutzung
 - ✅ Kompatibel mit Nextcloud AppImage-Signatur-Standard
+
+### Web Interface Features 🌐
+- ✅ **Modernes UI**: IONOS Design System, responsive & mobile-optimized
+- ✅ **Dark Mode**: Automatische und manuelle Theme-Umschaltung
+- ✅ **Internationalisierung**: Deutsch & Englisch mit Browser-Erkennung
+- ✅ **Keyboard Shortcuts**: Ctrl+S (Sign), Ctrl+D (Download), Ctrl+T (Theme), etc.
+- ✅ **Toast Notifications**: Moderne Benachrichtigungen statt Alerts
+- ✅ **Progress Tracking**: Echtzeit Upload-Progress mit MB/s und ETA
+- ✅ **Drag & Drop**: Intuitive Datei-Uploads
+- ✅ **Live Preview**: Signatur-Metadaten anzeigen
+- ✅ **ZIP Download**: AppImage + Signatur zusammen herunterladen
+- ✅ **Session Management**: Automatisches Cleanup nach 24h
+- ✅ **Security**: CORS, File Validation, Input Sanitization
+
+### Technical Features 🛠️
+- ✅ **Type Safety**: Vollständige Type Hints, mypy validated
+- ✅ **Pydantic Models**: Validierte Request/Response Models
+- ✅ **Custom Exceptions**: Spezifische Error-Typen mit HTTP Codes
+- ✅ **Services Layer**: Separation of Concerns (signing, verification, cleanup)
+- ✅ **Configuration Management**: Pydantic BaseSettings mit Validators
+- ✅ **API Documentation**: OpenAPI/Swagger unter `/docs`
+- ✅ **Health Checks**: `/health` Endpoint für Monitoring
+- ✅ **Logging**: Strukturiertes Logging mit Rotation
+- ✅ **Docker Support**: Multi-stage Dockerfile, docker-compose
+- ✅ **CI/CD**: GitHub Actions Pipeline (Lint, Test, Security, Build)
 
 ## 📋 Voraussetzungen
 
