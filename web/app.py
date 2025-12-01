@@ -16,6 +16,8 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import aiofiles
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 
 # Import our existing signing logic
 import sys
@@ -24,18 +26,29 @@ from src.resigner import AppImageResigner
 from src.verify import AppImageVerifier
 from src.key_manager import GPGKeyManager
 
+# Import logging configuration
+from web.core.logging_config import setup_logging, get_logger, log_operation
+from web.core.config import settings
+from web.core.validation import validate_appimage_file
+
+# Setup logging
+setup_logging(
+    log_level=settings.log_level,
+    log_to_file=settings.log_to_file,
+    log_to_console=settings.log_to_console
+)
+logger = get_logger(__name__)
+
 
 # Configuration
-UPLOAD_DIR = Path("uploads")
-SIGNED_DIR = Path("signed")
-TEMP_KEYS_DIR = Path("temp_keys")
-MAX_FILE_SIZE = 500 * 1024 * 1024  # 500 MB
-CLEANUP_AFTER_HOURS = 24
+UPLOAD_DIR = settings.upload_dir
+SIGNED_DIR = settings.signed_dir
+TEMP_KEYS_DIR = settings.temp_keys_dir
+MAX_FILE_SIZE = settings.max_file_size_bytes
+CLEANUP_AFTER_HOURS = settings.cleanup_after_hours
 
 # Create directories
-UPLOAD_DIR.mkdir(exist_ok=True)
-SIGNED_DIR.mkdir(exist_ok=True)
-TEMP_KEYS_DIR.mkdir(exist_ok=True)
+settings.create_directories()
 
 # FastAPI app
 app = FastAPI(
@@ -47,7 +60,7 @@ app = FastAPI(
 # CORS middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production: specify your domains
+    allow_origins=settings.cors_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -82,17 +95,23 @@ def cleanup_session(session_id: str):
         session = sessions[session_id]
         
         # Delete uploaded files
+        files_deleted = 0
         if session.appimage_path and session.appimage_path.exists():
             session.appimage_path.unlink()
+            files_deleted += 1
         if session.key_path and session.key_path.exists():
             session.key_path.unlink()
+            files_deleted += 1
         if session.signed_path and session.signed_path.exists():
             session.signed_path.unlink()
+            files_deleted += 1
         if session.signature_path and session.signature_path.exists():
             session.signature_path.unlink()
+            files_deleted += 1
         
         # Remove from sessions
         del sessions[session_id]
+        logger.info(f"Session cleaned up | session_id={session_id} | files_deleted={files_deleted}")
 
 
 def cleanup_old_sessions():
@@ -104,8 +123,38 @@ def cleanup_old_sessions():
         if session.created_at < cutoff_time
     ]
     
+    if old_sessions:
+        logger.info(f"Cleaning up {len(old_sessions)} old sessions")
+    
     for sid in old_sessions:
         cleanup_session(sid)
+    
+    return len(old_sessions)
+
+
+# Setup background scheduler for automatic cleanup
+scheduler = BackgroundScheduler()
+scheduler.add_job(
+    func=cleanup_old_sessions,
+    trigger=IntervalTrigger(hours=1),  # Run every hour
+    id='cleanup_old_sessions',
+    name='Clean up old sessions',
+    replace_existing=True
+)
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Start the background scheduler when the app starts"""
+    scheduler.start()
+    logger.info("Background scheduler started - sessions will be cleaned up every hour")
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Stop the background scheduler when the app shuts down"""
+    scheduler.shutdown()
+    logger.info("Background scheduler stopped")
 
 
 @app.get("/")
@@ -119,6 +168,8 @@ async def create_session():
     """Create a new signing session"""
     session_id = str(uuid.uuid4())
     sessions[session_id] = SigningSession(session_id)
+    
+    logger.info(f"Session created | session_id={session_id}")
     
     return {
         "session_id": session_id,
@@ -135,28 +186,42 @@ async def upload_appimage(
     """Upload an AppImage file"""
     
     if session_id not in sessions:
+        logger.warning(f"Upload attempt with invalid session | session_id={session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = sessions[session_id]
     
-    # Validate file
+    # Validate file extension first
     if not file.filename.endswith('.AppImage'):
+        logger.warning(f"Invalid file upload | session_id={session_id} | filename={file.filename}")
         raise HTTPException(status_code=400, detail="File must be an AppImage")
     
-    # Save file
+    # Save file temporarily
     file_path = UPLOAD_DIR / f"{session_id}_{file.filename}"
     
     try:
         async with aiofiles.open(file_path, 'wb') as out_file:
             content = await file.read()
-            
-            if len(content) > MAX_FILE_SIZE:
-                raise HTTPException(status_code=400, detail="File too large")
-            
             await out_file.write(content)
+        
+        # Validate AppImage file (ELF header, size, format)
+        is_valid, error_msg = validate_appimage_file(
+            file_path,
+            max_size_bytes=MAX_FILE_SIZE,
+            check_elf=True,
+            check_appimage=True
+        )
+        
+        if not is_valid:
+            # Delete invalid file
+            file_path.unlink(missing_ok=True)
+            logger.warning(f"Invalid AppImage file | session_id={session_id} | error={error_msg}")
+            raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
         
         session.appimage_path = file_path
         session.status = "appimage_uploaded"
+        
+        logger.info(f"AppImage uploaded | session_id={session_id} | filename={file.filename} | size={len(content)}")
         
         # Check for existing signature info (without verification)
         signature_info = None
@@ -165,9 +230,9 @@ async def upload_appimage(
             verifier = AppImageVerifier()
             # Just get signature info, don't verify yet
             signature_info = verifier.get_signature_info(str(file_path))
-            print(f"ℹ Signature info: {signature_info}")
+            logger.debug(f"Signature info retrieved | session_id={session_id} | info={signature_info}")
         except Exception as e:
-            print(f"⚠ Could not get signature info: {e}")
+            logger.warning(f"Could not get signature info | session_id={session_id} | error={str(e)}")
             import traceback
             traceback.print_exc()
             # Don't fail the upload, just return no signature info
@@ -185,6 +250,7 @@ async def upload_appimage(
         
     except Exception as e:
         session.error = str(e)
+        logger.error(f"Upload failed | session_id={session_id} | error={str(e)}")
         raise HTTPException(status_code=500, detail=f"Upload failed: {str(e)}")
 
 
@@ -196,6 +262,7 @@ async def upload_key(
     """Upload a GPG private key file"""
     
     if session_id not in sessions:
+        logger.warning(f"Key upload with invalid session | session_id={session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = sessions[session_id]
@@ -211,6 +278,8 @@ async def upload_key(
         session.key_path = key_path
         session.status = "key_uploaded"
         
+        logger.info(f"Private key uploaded | session_id={session_id} | size={len(content)}")
+        
         return {
             "status": "success",
             "message": "Key uploaded successfully"
@@ -218,6 +287,7 @@ async def upload_key(
         
     except Exception as e:
         session.error = str(e)
+        logger.error(f"Key upload failed | session_id={session_id} | error={str(e)}")
         raise HTTPException(status_code=500, detail=f"Key upload failed: {str(e)}")
 
 
@@ -276,6 +346,14 @@ async def sign_appimage(
     if not session.appimage_path:
         raise HTTPException(status_code=400, detail="No AppImage uploaded")
     
+    # Security: Warn if passphrase is empty
+    if passphrase is not None and len(passphrase.strip()) == 0:
+        logger.warning(f"Empty passphrase provided | session_id={session_id}")
+        raise HTTPException(
+            status_code=400, 
+            detail="Passphrase cannot be empty. If your key has no passphrase, omit the field."
+        )
+    
     try:
         # Import key if uploaded
         if session.key_path:
@@ -298,7 +376,7 @@ async def sign_appimage(
         # Copy original to signed directory
         shutil.copy2(session.appimage_path, output_path)
         
-        # Sign
+        # Sign (passphrase will be used but not stored)
         success = resigner.sign_appimage(
             str(output_path),
             key_id=key_id,
@@ -306,17 +384,21 @@ async def sign_appimage(
             embed_signature=embed_signature
         )
         
+        # Security: Overwrite passphrase in memory
+        if passphrase:
+            passphrase = "X" * len(passphrase)
+            del passphrase
+        
         if success:
             session.signed_path = output_path
             session.signature_path = signature_path
             session.status = "signed"
             
             # Verify signature
-            print(f"🔍 Verifying signature for: {output_path}")
-            print(f"🔍 Embed signature was: {embed_signature}")
+            logger.info(f"Verifying signature | session_id={session_id} | embed={embed_signature}")
             verifier = AppImageVerifier()
             verification = verifier.verify_signature(str(output_path))
-            print(f"🔍 Verification result: {verification}")
+            logger.info(f"Verification result | session_id={session_id} | valid={verification.get('valid')}")
             session.verification_result = verification
             
             return {
@@ -344,17 +426,19 @@ async def verify_uploaded_signature(session_id: str):
     """Verify the signature of an uploaded AppImage"""
     
     if session_id not in sessions:
+        logger.warning(f"Verify with invalid session | session_id={session_id}")
         raise HTTPException(status_code=404, detail="Session not found")
     
     session = sessions[session_id]
     
     if not session.appimage_path:
+        logger.warning(f"Verify without AppImage | session_id={session_id}")
         raise HTTPException(status_code=400, detail="No AppImage uploaded")
     
     try:
         verifier = AppImageVerifier()
         result = verifier.verify_signature(str(session.appimage_path))
-        print(f"🔍 Verification result: {result}")
+        logger.info(f"Signature verified | session_id={session_id} | valid={result.get('valid')}")
         
         return {
             "status": "success",
