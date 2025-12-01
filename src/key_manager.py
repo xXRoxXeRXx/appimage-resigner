@@ -264,23 +264,43 @@ class GPGKeyManager:
             print(f"✗ Key file not found: {key_path}")
             return None
         
-        with open(key_path, 'r') as f:
-            key_data = f.read()
+        # Try to read as text first (ASCII-armored), fallback to binary
+        try:
+            with open(key_path, 'r', encoding='utf-8') as f:
+                key_data = f.read()
+            is_text = True
+        except UnicodeDecodeError:
+            # Binary format - read as bytes and let GPG handle it
+            with open(key_path, 'rb') as f:
+                key_data = f.read()
+            is_text = False
+            print("⚠ Key file is in binary format (not ASCII-armored)")
         
-        # Check if this is a private key
-        if 'BEGIN PGP PRIVATE KEY BLOCK' not in key_data and 'BEGIN PRIVATE KEY' not in key_data:
-            print("✗ This is not a private key!")
-            print("  The uploaded key appears to be a PUBLIC key.")
-            print("  You need to upload a PRIVATE key for signing.")
-            raise ValueError("Not a private key: File must contain a private key (BEGIN PGP PRIVATE KEY BLOCK)")
+        # Check if this is a private key (only for text format)
+        if is_text:
+            if 'BEGIN PGP PRIVATE KEY BLOCK' not in key_data and 'BEGIN PRIVATE KEY' not in key_data:
+                print("✗ This is not a private key!")
+                print("  The uploaded key appears to be a PUBLIC key.")
+                print("  You need to upload a PRIVATE key for signing.")
+                raise ValueError("Not a private key: File must contain a private key (BEGIN PGP PRIVATE KEY BLOCK)")
         
         result = self.gpg.import_keys(key_data)
+        
+        # Debug: Log import result details
+        print(f"GPG Import Result:")
+        print(f"  Count: {result.count}")
+        print(f"  Fingerprints: {result.fingerprints}")
+        print(f"  Results: {result.results}")
+        if hasattr(result, 'stderr'):
+            print(f"  Stderr: {result.stderr}")
         
         if result.count > 0 and result.fingerprints:
             fingerprint = result.fingerprints[0]
             
             # Verify the key actually has a secret key
             secret_keys = self.gpg.list_keys(True)  # True = secret keys only
+            print(f"  Available secret keys: {[k['fingerprint'] for k in secret_keys]}")
+            
             has_secret = any(k['fingerprint'] == fingerprint for k in secret_keys)
             
             if not has_secret:
@@ -294,6 +314,7 @@ class GPGKeyManager:
             return fingerprint
         else:
             print("✗ Failed to import key")
+            print(f"  Import stderr: {result.stderr if hasattr(result, 'stderr') else 'N/A'}")
             return None
     
     def generate_revocation_cert(
