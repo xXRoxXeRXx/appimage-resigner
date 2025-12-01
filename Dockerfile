@@ -22,13 +22,16 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Create necessary directories BEFORE copying code
+RUN mkdir -p uploads signed temp_keys logs && \
+    chown -R appuser:appuser uploads signed temp_keys logs
+
 # Copy application code
 COPY --chown=appuser:appuser src/ ./src/
 COPY --chown=appuser:appuser web/ ./web/
 
-# Create necessary directories with correct permissions
-RUN mkdir -p uploads signed temp_keys logs && \
-    chown -R appuser:appuser uploads signed temp_keys logs
+# Ensure permissions are correct after copy (in case web/ contains logs/)
+RUN chown -R appuser:appuser uploads signed temp_keys logs
 
 # Switch to non-root user
 USER appuser
