@@ -25,10 +25,12 @@ class I18n {
         // Set initial language
         this.currentLang = savedLang || (this.translations[browserLang] ? browserLang : this.fallbackLang);
         
-        // Apply language
+        // Mark as initialized BEFORE calling setLanguage
+        this.initialized = true;
+        
+        // Apply language (will now work because initialized = true)
         this.setLanguage(this.currentLang);
         
-        this.initialized = true;
         console.log(`🌍 i18n initialized with language: ${this.currentLang}`);
     }
 

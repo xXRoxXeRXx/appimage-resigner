@@ -55,6 +55,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (languageSelect) {
             languageSelect.value = i18n.getLanguage();
         }
+        
+        // Ensure UI is updated after initialization
+        console.log('🔄 Applying translations to UI...');
+        i18n.updateUI();
     }
     
     // Add event listener to theme toggle
