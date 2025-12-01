@@ -2,9 +2,22 @@
 
 🔐 Ein Python-Tool und Web-Interface zum Entfernen und Hinzufügen von GPG-Signaturen bei Linux AppImage-Dateien.
 
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.115-green.svg)](https://fastapi.tiangolo.com)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://www.docker.com)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## 🎯 Projektübersicht
 
 Dieses Tool löst das Problem, wenn AppImages aus automatisierten Build-Prozessen stammen und mit einer eigenen GPG-Signatur versehen werden müssen. Es ermöglicht das Re-Signieren von AppImages in wenigen Schritten - sowohl über CLI als auch über ein modernes Web-Interface.
+
+### 🚀 Highlights
+
+- **Modern**: FastAPI Backend, Responsive UI, Dark Mode
+- **Secure**: CSP, CSRF Protection, Rate Limiting, Audit Logging
+- **Developer-Friendly**: Type-safe, Pydantic Models, OpenAPI Docs
+- **Production-Ready**: Docker, CI/CD, Health Checks, Monitoring
+- **International**: Deutsch & Englisch, mehr Sprachen einfach hinzufügbar
 
 ##  ✨ Features
 
@@ -25,11 +38,23 @@ Dieses Tool löst das Problem, wenn AppImages aus automatisierten Build-Prozesse
 - ✅ **Keyboard Shortcuts**: Ctrl+S (Sign), Ctrl+D (Download), Ctrl+T (Theme), etc.
 - ✅ **Toast Notifications**: Moderne Benachrichtigungen statt Alerts
 - ✅ **Progress Tracking**: Echtzeit Upload-Progress mit MB/s und ETA
+- ✅ **Chunked Upload**: Streaming für große Dateien (>50MB) mit Resume-Support
+- ✅ **Key Management**: Import, List, Delete GPG Keys mit UI
 - ✅ **Drag & Drop**: Intuitive Datei-Uploads
 - ✅ **Live Preview**: Signatur-Metadaten anzeigen
 - ✅ **ZIP Download**: AppImage + Signatur zusammen herunterladen
 - ✅ **Session Management**: Automatisches Cleanup nach 24h
-- ✅ **Security**: CORS, File Validation, Input Sanitization
+- ✅ **Security**: CORS, CSP, CSRF Protection, Rate Limiting
+
+### Security Features 🔐
+- ✅ **Content Security Policy (CSP)**: XSS Prevention
+- ✅ **CSRF Protection**: Token-based validation (warning mode)
+- ✅ **Rate Limiting**: 100 req/60s per IP with X-RateLimit headers
+- ✅ **Input Sanitization**: Path traversal, XSS, command injection prevention
+- ✅ **Security Headers**: HSTS, X-Frame-Options, X-Content-Type-Options, etc.
+- ✅ **File Size Validation**: Content-Length checks, 413 errors
+- ✅ **Audit Logging**: Compliance-ready with IP, User-Agent, timestamps
+- ✅ **Log Injection Prevention**: Sanitized logging
 
 ### Technical Features 🛠️
 - ✅ **Type Safety**: Vollständige Type Hints, mypy validated
