@@ -52,6 +52,13 @@ temp_keys/
 *.appimage.test
 test_output/
 
+# Testing & Type Checking Cache
+.pytest_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+
 # AppImage files (binary files, should not be committed)
 appimage/
 
@@ -62,3 +69,4 @@ temp_keys/
 
 # Logs
 *.log
+logs/
