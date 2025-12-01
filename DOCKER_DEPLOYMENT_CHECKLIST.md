@@ -191,6 +191,38 @@ docker ps  # STATUS: unhealthy
    HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3
    ```
 
+### Problem 9: "docker-compose KeyError: 'id'" (Harmlos)
+**Symptom:**
+```
+Exception in thread Thread-4 (watch_events):
+...
+KeyError: 'id'
+```
+
+**Root Cause:**
+- Known bug in docker-compose event streaming (threading race condition)
+- Occurs in docker-compose versions < 2.0
+- Does NOT affect container operation
+
+**Solution:**
+- ✅ **Ignore this error** - container runs normally
+- Verify container is healthy: `docker ps`
+- Check logs: `docker logs appimage-resigner`
+- Upgrade docker-compose (optional):
+  ```bash
+  # Linux
+  sudo apt-get update && sudo apt-get install docker-compose-plugin
+  
+  # Or use Docker Compose V2
+  docker compose up -d  # Note: 'compose' not 'docker-compose'
+  ```
+
+**Verification:**
+```bash
+docker ps --filter "name=appimage-resigner"
+# Should show: STATUS: Up X minutes (healthy)
+```
+
 ## 🧪 Testing Checklist
 
 ### Lokal testen
