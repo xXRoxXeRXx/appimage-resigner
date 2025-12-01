@@ -13,8 +13,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser -u 1000 appuser
+# Create non-root user with home directory
+RUN groupadd -r appuser && useradd -r -g appuser -u 1000 -m -d /home/appuser appuser
 
 # Set working directory
 WORKDIR /app
@@ -24,8 +24,9 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Create necessary directories BEFORE copying code
-RUN mkdir -p uploads signed temp_keys logs && \
-    chown -R appuser:appuser uploads signed temp_keys logs
+RUN mkdir -p uploads signed temp_keys logs /home/appuser/.gnupg && \
+    chown -R appuser:appuser uploads signed temp_keys logs /home/appuser/.gnupg && \
+    chmod 700 /home/appuser/.gnupg
 
 # Copy application code
 COPY --chown=appuser:appuser src/ ./src/

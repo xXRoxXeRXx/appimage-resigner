@@ -8,6 +8,13 @@ if [ "$(id -u)" = "0" ]; then
     # Fix ownership of directories
     chown -R appuser:appuser /app/uploads /app/signed /app/temp_keys /app/logs 2>/dev/null || true
     
+    # Ensure GPG home directory exists and has correct permissions
+    if [ ! -d /home/appuser/.gnupg ]; then
+        mkdir -p /home/appuser/.gnupg
+        chown -R appuser:appuser /home/appuser/.gnupg
+        chmod 700 /home/appuser/.gnupg
+    fi
+    
     # Switch to appuser and execute command
     echo "Switching to appuser..."
     exec gosu appuser "$@"
