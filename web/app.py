@@ -82,6 +82,7 @@ class SigningSession:
         self.created_at = datetime.now()
         self.appimage_path: Optional[Path] = None
         self.key_path: Optional[Path] = None
+        self.key_fingerprint: Optional[str] = None  # Store imported key fingerprint
         self.signed_path: Optional[Path] = None
         self.signature_path: Optional[Path] = None
         self.status = "initialized"
@@ -401,10 +402,26 @@ async def sign_appimage(
         )
     
     try:
-        # Import key if uploaded
+        # Import key if uploaded and get fingerprint
         if session.key_path:
             manager = GPGKeyManager()
-            manager.import_key(str(session.key_path))
+            fingerprint = manager.import_key_get_fingerprint(str(session.key_path))
+            if fingerprint:
+                session.key_fingerprint = fingerprint
+                logger.info(f"Key imported | session_id={session_id} | fingerprint={fingerprint}")
+                # Use fingerprint as key_id if not provided
+                if not key_id:
+                    key_id = fingerprint
+                    logger.info(f"Using imported key fingerprint as key_id | session_id={session_id}")
+            else:
+                raise HTTPException(status_code=400, detail="Failed to import GPG key")
+        
+        # Check if we have a key_id to use
+        if not key_id:
+            raise HTTPException(
+                status_code=400, 
+                detail="No key_id provided and no key was uploaded. Please provide a key_id or upload a GPG key."
+            )
         
         # Initialize resigner
         resigner = AppImageResigner()

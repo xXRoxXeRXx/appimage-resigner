@@ -245,6 +245,36 @@ class GPGKeyManager:
             print("✗ Failed to import key")
             return False
     
+    def import_key_get_fingerprint(self, key_file: str) -> Optional[str]:
+        """
+        Import a GPG key from a file and return the fingerprint.
+        
+        Args:
+            key_file: Path to the key file
+        
+        Returns:
+            Fingerprint of the imported key, or None if import failed
+        """
+        key_path = Path(key_file)
+        
+        if not key_path.exists():
+            print(f"✗ Key file not found: {key_path}")
+            return None
+        
+        with open(key_path, 'r') as f:
+            key_data = f.read()
+        
+        result = self.gpg.import_keys(key_data)
+        
+        if result.count > 0 and result.fingerprints:
+            fingerprint = result.fingerprints[0]
+            print(f"✓ Successfully imported key")
+            print(f"  Fingerprint: {fingerprint}")
+            return fingerprint
+        else:
+            print("✗ Failed to import key")
+            return None
+    
     def generate_revocation_cert(
         self,
         key_id: str,
