@@ -12,6 +12,7 @@
     <link rel="icon" type="image/png" sizes="48x48" href="/static/favicon-48px.png">
     
     <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="/static/toast.css">
 </head>
 <body>
     <!-- Logo Header - Outside Container, Above Container -->
@@ -146,13 +147,17 @@
                     </div>
 
                     <div class="download-buttons">
+                        <a href="#" class="btn-download btn-download-primary" id="download-zip">
+                            <span>📦</span>
+                            Beide als ZIP herunterladen
+                        </a>
                         <a href="#" class="btn-download" id="download-appimage">
                             <span>📦</span>
-                            Signierte AppImage herunterladen
+                            Signierte AppImage
                         </a>
                         <a href="#" class="btn-download" id="download-signature">
                             <span>🔐</span>
-                            Signatur (.asc) herunterladen
+                            Signatur (.asc)
                         </a>
                     </div>
                 </div>
@@ -187,6 +192,7 @@
         </footer>
     </div>
 
+    <script src="/static/toast.js"></script>
     <script src="/static/app.js"></script>
 </body>
 </html>

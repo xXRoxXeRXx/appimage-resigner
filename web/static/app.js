@@ -82,6 +82,7 @@ const resultError = document.getElementById('result-error');
 const errorMessage = document.getElementById('error-message');
 const verificationDetails = document.getElementById('verification-details');
 
+const downloadZip = document.getElementById('download-zip');
 const downloadAppImage = document.getElementById('download-appimage');
 const downloadSignature = document.getElementById('download-signature');
 const resetButton = document.getElementById('reset-button');
@@ -112,7 +113,7 @@ async function createSession() {
         console.log('Session created:', sessionId);
     } catch (error) {
         console.error('Failed to create session:', error);
-        alert('Fehler beim Erstellen der Session');
+        toast.error('Fehler beim Erstellen der Session. Bitte laden Sie die Seite neu.');
     }
 }
 
@@ -148,7 +149,7 @@ async function handleAppImageSelect(e) {
     if (!file) return;
     
     if (!file.name.endsWith('.AppImage')) {
-        alert('Bitte wählen Sie eine .AppImage Datei');
+        toast.warning('Bitte wählen Sie eine .AppImage Datei aus.');
         return;
     }
     
@@ -163,7 +164,166 @@ async function handleAppImageSelect(e) {
     await uploadAppImage(file);
 }
 
+function uploadAppImageWithProgress(file) {
+    return new Promise((resolve, reject) => {
+        const formData = new FormData();
+        formData.append('session_id', sessionId);
+        formData.append('file', file);
+        
+        const xhr = new XMLHttpRequest();
+        
+        // Progress tracking variables
+        let startTime = Date.now();
+        let lastLoaded = 0;
+        let lastTime = startTime;
+        
+        // Progress event
+        xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+                const now = Date.now();
+                const elapsed = (now - lastTime) / 1000; // seconds
+                const currentLoaded = e.loaded;
+                const bytesInInterval = currentLoaded - lastLoaded;
+                
+                // Calculate speed (MB/s)
+                const speed = (bytesInInterval / elapsed) / (1024 * 1024);
+                
+                // Calculate percentage
+                const percent = Math.round((e.loaded / e.total) * 100);
+                
+                // Calculate remaining time
+                const remainingBytes = e.total - e.loaded;
+                const remainingSeconds = speed > 0 ? remainingBytes / (speed * 1024 * 1024) : 0;
+                
+                // Update progress display
+                updateUploadProgress(percent, speed, remainingSeconds, e.loaded, e.total);
+                
+                // Update tracking variables
+                lastLoaded = currentLoaded;
+                lastTime = now;
+            }
+        });
+        
+        // Load event (upload complete)
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const data = JSON.parse(xhr.responseText);
+                    resolve(data);
+                } catch (error) {
+                    reject(new Error('Invalid JSON response'));
+                }
+            } else {
+                try {
+                    const error = JSON.parse(xhr.responseText);
+                    reject(new Error(error.detail || 'Upload failed'));
+                } catch {
+                    reject(new Error(`Upload failed with status ${xhr.status}`));
+                }
+            }
+        });
+        
+        // Error event
+        xhr.addEventListener('error', () => {
+            reject(new Error('Network error during upload'));
+        });
+        
+        // Abort event
+        xhr.addEventListener('abort', () => {
+            reject(new Error('Upload cancelled'));
+        });
+        
+        // Open and send request
+        xhr.open('POST', '/api/upload/appimage');
+        xhr.send(formData);
+    });
+}
+
+function updateUploadProgress(percent, speed, remainingSeconds, loaded, total) {
+    // Format file sizes
+    const loadedMB = (loaded / (1024 * 1024)).toFixed(2);
+    const totalMB = (total / (1024 * 1024)).toFixed(2);
+    
+    // Format remaining time
+    let timeString = '';
+    if (remainingSeconds < 60) {
+        timeString = `${Math.ceil(remainingSeconds)}s verbleibend`;
+    } else {
+        const minutes = Math.floor(remainingSeconds / 60);
+        const seconds = Math.ceil(remainingSeconds % 60);
+        timeString = `${minutes}m ${seconds}s verbleibend`;
+    }
+    
+    // Update or create progress display
+    let progressDiv = document.getElementById('upload-progress');
+    if (!progressDiv) {
+        progressDiv = document.createElement('div');
+        progressDiv.id = 'upload-progress';
+        progressDiv.className = 'upload-progress';
+        appImageDropZone.appendChild(progressDiv);
+    }
+    
+    progressDiv.innerHTML = `
+        <div class="progress-bar">
+            <div class="progress-fill" style="width: ${percent}%"></div>
+        </div>
+        <div class="progress-stats">
+            <span class="progress-percent">${percent}%</span>
+            <span class="progress-speed">${speed.toFixed(2)} MB/s</span>
+            <span class="progress-time">${timeString}</span>
+        </div>
+        <div class="progress-size">${loadedMB} MB / ${totalMB} MB</div>
+    `;
+    
+    // Hide progress when complete
+    if (percent >= 100) {
+        setTimeout(() => {
+            progressDiv.style.display = 'none';
+        }, 2000);
+    }
+}
+
 async function uploadAppImage(file) {
+    try {
+        const data = await uploadAppImageWithProgress(file);
+        
+        console.log('✓ AppImage uploaded successfully');
+        console.log('Response data:', data);
+        
+        // Show signature info if present (without verification)
+        if (data.signature_info && data.signature_info.has_signature) {
+            console.log('📝 Signature found:', data.signature_info);
+            
+            displaySignatureInfo('original-signature', data.signature_info);
+            document.getElementById('original-signature').style.display = 'block';
+            
+            // Show verify button
+            const verifyButton = document.getElementById('verify-signature-button');
+            verifyButton.style.display = 'inline-flex';
+            verifyButton.onclick = () => verifyUploadedSignature();
+            
+            // Add pulse animation after a short delay
+            setTimeout(() => {
+                verifyButton.classList.add('pulse');
+            }, 500);
+        } else {
+            // No signature found
+            console.log('❌ No signature found');
+            document.getElementById('signature-upload-hint').style.display = 'block';
+        }
+        
+        // Show success toast
+        toast.success('✓ AppImage erfolgreich hochgeladen!');
+        
+        enableStep(step2);
+        checkReadyToSign();
+    } catch (error) {
+        console.error('Upload error:', error);
+        toast.error('Upload fehlgeschlagen: ' + error.message);
+    }
+}
+
+async function uploadAppImageOLD(file) {
     const formData = new FormData();
     formData.append('session_id', sessionId);
     formData.append('file', file);
@@ -205,11 +365,11 @@ async function uploadAppImage(file) {
             enableStep(step2);
             checkReadyToSign();
         } else {
-            alert('Upload fehlgeschlagen: ' + data.detail);
+            toast.error('Upload fehlgeschlagen: ' + data.detail);
         }
     } catch (error) {
         console.error('Upload error:', error);
-        alert('Upload fehlgeschlagen');
+        toast.error('Upload fehlgeschlagen. Bitte versuchen Sie es erneut.');
     }
 }
 
@@ -303,14 +463,15 @@ async function uploadKey(file) {
         
         if (response.ok) {
             console.log('Key uploaded');
+            toast.success('✓ GPG-Schlüssel erfolgreich hochgeladen!');
             checkReadyToSign();
         } else {
             const error = await response.json();
-            alert('Key-Upload fehlgeschlagen: ' + error.detail);
+            toast.error('Key-Upload fehlgeschlagen: ' + error.detail);
         }
     } catch (error) {
         console.error('Key upload error:', error);
-        alert('Key-Upload fehlgeschlagen');
+        toast.error('Key-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.');
     }
 }
 
@@ -376,6 +537,9 @@ function showSuccess(data) {
     resultSuccess.style.display = 'block';
     resultError.style.display = 'none';
     
+    // Show success toast
+    toast.success('✓ AppImage erfolgreich signiert!', 6000);
+    
     // Show verification details
     const verification = data.verification;
     console.log('Verification data:', verification);
@@ -418,6 +582,7 @@ function showSuccess(data) {
     }
     
     // Set download links
+    downloadZip.href = `/api/download/zip/${sessionId}`;
     downloadAppImage.href = data.download_urls.appimage;
     downloadSignature.href = data.download_urls.signature;
     
@@ -666,7 +831,7 @@ function copyToClipboard(elementId) {
         }, 2000);
     }).catch(err => {
         console.error('Failed to copy:', err);
-        alert('Kopieren fehlgeschlagen');
+        toast.error('Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.');
     });
 }
 
@@ -689,13 +854,13 @@ async function verifyUploadedSignature() {
             displaySignature('original-signature', data.verification, 'Signatur verifiziert');
             verifyButton.style.display = 'none';
         } else {
-            alert('Verifikation fehlgeschlagen: ' + (data.detail || 'Unbekannter Fehler'));
+            toast.error('Verifikation fehlgeschlagen: ' + (data.detail || 'Unbekannter Fehler'));
             verifyButton.disabled = false;
             verifyButton.innerHTML = originalText;
         }
     } catch (error) {
         console.error('Verification error:', error);
-        alert('Verifikation fehlgeschlagen: ' + error.message);
+        toast.error('Verifikation fehlgeschlagen: ' + error.message);
         verifyButton.disabled = false;
         verifyButton.innerHTML = originalText;
     }
