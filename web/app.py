@@ -30,6 +30,7 @@ from src.key_manager import GPGKeyManager
 from web.core.logging_config import setup_logging, get_logger, log_operation
 from web.core.config import settings
 from web.core.validation import validate_appimage_file
+from web.services.streaming import StreamingUpload
 
 # Setup logging
 setup_logging(
@@ -849,6 +850,214 @@ async def delete_key(fingerprint: str, delete_secret: bool = False):
     except Exception as e:
         logger.error(f"Failed to delete key | fingerprint={fingerprint} | error={str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to delete key: {str(e)}")
+
+
+# ============================================================================
+# Streaming/Chunked Upload Endpoints
+# ============================================================================
+
+@app.post("/api/upload/init")
+async def init_chunked_upload(
+    session_id: str = Form(...),
+    filename: str = Form(...),
+    total_size: int = Form(...),
+    file_type: str = Form("appimage")
+):
+    """
+    Initialize a chunked upload session for large files.
+    
+    Args:
+        session_id: Signing session ID
+        filename: Original filename
+        total_size: Total file size in bytes
+        file_type: Type of file (appimage, key, signature)
+        
+    Returns:
+        Upload session info with chunk details
+    """
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    try:
+        upload_info = await StreamingUpload.init_upload(
+            session_id=session_id,
+            filename=filename,
+            total_size=total_size,
+            file_type=file_type
+        )
+        
+        return upload_info
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to init upload | session_id={session_id} | "
+            f"filename={filename} | error={str(e)}"
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to init upload: {str(e)}")
+
+
+@app.post("/api/upload/chunk/{session_id}")
+async def upload_chunk(
+    session_id: str,
+    chunk_number: int = Form(...),
+    checksum: Optional[str] = Form(None),
+    chunk: UploadFile = File(...)
+):
+    """
+    Upload a single file chunk.
+    
+    Args:
+        session_id: Upload session ID
+        chunk_number: Chunk number (0-indexed)
+        checksum: Optional MD5 checksum for verification
+        chunk: Chunk binary data
+        
+    Returns:
+        Chunk upload status with progress
+    """
+    try:
+        # Read chunk data
+        chunk_data = await chunk.read()
+        
+        # Upload chunk
+        result = await StreamingUpload.upload_chunk(
+            session_id=session_id,
+            chunk_number=chunk_number,
+            chunk_data=chunk_data,
+            checksum=checksum
+        )
+        
+        return result
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to upload chunk | session_id={session_id} | "
+            f"chunk={chunk_number} | error={str(e)}"
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to upload chunk: {str(e)}")
+
+
+@app.post("/api/upload/complete/{session_id}")
+async def complete_chunked_upload(
+    session_id: str,
+    file_type: str = Form("appimage")
+):
+    """
+    Complete chunked upload and merge chunks into final file.
+    
+    Args:
+        session_id: Upload session ID
+        file_type: Type of file (appimage, key, signature)
+        
+    Returns:
+        Upload completion status with file info
+    """
+    if session_id not in sessions:
+        raise HTTPException(status_code=404, detail="Session not found")
+    
+    session = sessions[session_id]
+    
+    try:
+        # Determine target directory based on file type
+        if file_type == "key":
+            target_dir = TEMP_KEYS_DIR
+        else:
+            target_dir = UPLOAD_DIR
+        
+        # Complete upload
+        final_path = await StreamingUpload.complete_upload(
+            session_id=session_id,
+            target_dir=target_dir
+        )
+        
+        # Update session with file path
+        if file_type == "appimage":
+            session.appimage_path = final_path
+            session.status = "appimage_uploaded"
+            
+            # Validate AppImage
+            is_valid, error_msg = validate_appimage_file(
+                final_path,
+                max_size_bytes=MAX_FILE_SIZE,
+                check_elf=True,
+                check_appimage=True
+            )
+            
+            if not is_valid:
+                final_path.unlink(missing_ok=True)
+                raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
+            
+            # Get signature info
+            try:
+                verifier = AppImageVerifier()
+                signature_info = verifier.get_signature_info(str(final_path))
+            except Exception as e:
+                signature_info = {
+                    'has_signature': False,
+                    'error': f"Could not read signature: {str(e)}"
+                }
+            
+            return {
+                "status": "success",
+                "filename": final_path.name,
+                "size": final_path.stat().st_size,
+                "signature_info": signature_info
+            }
+            
+        elif file_type == "key":
+            session.key_path = final_path
+            session.status = "key_uploaded"
+            
+            return {
+                "status": "success",
+                "message": "Key uploaded successfully",
+                "size": final_path.stat().st_size
+            }
+        
+        else:
+            return {
+                "status": "success",
+                "filename": final_path.name,
+                "size": final_path.stat().st_size
+            }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(
+            f"Failed to complete upload | session_id={session_id} | error={str(e)}"
+        )
+        raise HTTPException(status_code=500, detail=f"Failed to complete upload: {str(e)}")
+
+
+@app.get("/api/upload/status/{session_id}")
+async def get_upload_status(session_id: str):
+    """
+    Get status of chunked upload.
+    
+    Args:
+        session_id: Upload session ID
+        
+    Returns:
+        Upload progress and status
+    """
+    try:
+        status = StreamingUpload.get_upload_status(session_id)
+        return status
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get upload status | session_id={session_id} | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")
+
+
+# ============================================================================
+# End Streaming Upload Endpoints
+# ============================================================================
 
 
 @app.on_event("startup")
