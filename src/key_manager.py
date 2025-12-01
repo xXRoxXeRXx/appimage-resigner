@@ -311,11 +311,56 @@ class GPGKeyManager:
             
             print(f"✓ Successfully imported PRIVATE key")
             print(f"  Fingerprint: {fingerprint}")
+            
+            # Set ultimate trust for the imported key
+            self._set_ultimate_trust(fingerprint)
+            
             return fingerprint
         else:
             print("✗ Failed to import key")
             print(f"  Import stderr: {result.stderr if hasattr(result, 'stderr') else 'N/A'}")
             return None
+    
+    def _set_ultimate_trust(self, fingerprint: str) -> bool:
+        """
+        Set ultimate trust level for a key.
+        
+        This eliminates the "This key is not certified with a trusted signature!"
+        warning when verifying signatures.
+        
+        Args:
+            fingerprint: The key fingerprint
+            
+        Returns:
+            True if trust was set successfully, False otherwise
+        """
+        try:
+            import subprocess
+            
+            # Create trust input: fingerprint:6: (6 = ultimate trust)
+            trust_input = f"{fingerprint}:6:\n"
+            
+            # Use gpg --import-ownertrust
+            process = subprocess.Popen(
+                ['gpg', '--import-ownertrust'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            stdout, stderr = process.communicate(input=trust_input)
+            
+            if process.returncode == 0:
+                print(f"✓ Set ultimate trust for key {fingerprint[:16]}...")
+                return True
+            else:
+                print(f"⚠ Could not set trust level: {stderr}")
+                return False
+                
+        except Exception as e:
+            print(f"⚠ Failed to set trust level: {e}")
+            return False
     
     def generate_revocation_cert(
         self,
