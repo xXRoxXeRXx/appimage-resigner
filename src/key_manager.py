@@ -362,6 +362,63 @@ class GPGKeyManager:
             print(f"⚠ Failed to set trust level: {e}")
             return False
     
+    def import_key_from_string(self, key_content: str) -> Optional[str]:
+        """
+        Import a GPG key from a string and return the fingerprint.
+        
+        Args:
+            key_content: The key content as a string (ASCII-armored)
+        
+        Returns:
+            Fingerprint of the imported key if it's a private key, or None if import failed
+        
+        Raises:
+            ValueError: If the key is a public key, not a private key
+        """
+        # Check if this is a private key
+        if 'BEGIN PGP PRIVATE KEY BLOCK' not in key_content and 'BEGIN PRIVATE KEY' not in key_content:
+            print("✗ This is not a private key!")
+            print("  The uploaded key appears to be a PUBLIC key.")
+            print("  You need to upload a PRIVATE key for signing.")
+            raise ValueError("Not a private key: File must contain a private key (BEGIN PGP PRIVATE KEY BLOCK)")
+        
+        result = self.gpg.import_keys(key_content)
+        
+        # Debug: Log import result details
+        print(f"GPG Import Result:")
+        print(f"  Count: {result.count}")
+        print(f"  Fingerprints: {result.fingerprints}")
+        print(f"  Results: {result.results}")
+        if hasattr(result, 'stderr'):
+            print(f"  Stderr: {result.stderr}")
+        
+        if result.count > 0 and result.fingerprints:
+            fingerprint = result.fingerprints[0]
+            
+            # Verify the key actually has a secret key
+            secret_keys = self.gpg.list_keys(True)  # True = secret keys only
+            print(f"  Available secret keys: {[k['fingerprint'] for k in secret_keys]}")
+            
+            has_secret = any(k['fingerprint'] == fingerprint for k in secret_keys)
+            
+            if not has_secret:
+                print(f"✗ Key imported but no secret key found!")
+                print(f"  Fingerprint: {fingerprint}")
+                print("  This key cannot be used for signing.")
+                raise ValueError(f"No secret key found for fingerprint {fingerprint}")
+            
+            print(f"✓ Successfully imported PRIVATE key")
+            print(f"  Fingerprint: {fingerprint}")
+            
+            # Set ultimate trust for the imported key
+            self._set_ultimate_trust(fingerprint)
+            
+            return fingerprint
+        else:
+            print("✗ Failed to import key")
+            print(f"  Import stderr: {result.stderr if hasattr(result, 'stderr') else 'N/A'}")
+            return None
+    
     def generate_revocation_cert(
         self,
         key_id: str,
@@ -467,3 +524,141 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+
+
+# ============================================================================
+# Key Storage & Management Methods (for Web Interface)
+# ============================================================================
+
+def list_all_keys_with_metadata() -> Dict[str, Any]:
+    """
+    List all GPG keys with detailed metadata for UI display.
+    
+    Returns:
+        Dict with 'public_keys' and 'secret_keys' arrays
+    """
+    manager = GPGKeyManager()
+    
+    public_keys = manager.gpg.list_keys(False)  # Public keys
+    secret_keys = manager.gpg.list_keys(True)   # Secret keys
+    
+    # Enhance keys with additional info
+    def enhance_key(key: Dict[str, Any], is_secret: bool) -> Dict[str, Any]:
+        """Add computed fields for UI."""
+        import datetime
+        
+        # Parse expiry date
+        expiry_date = None
+        expiry_timestamp = key.get('expires')
+        if expiry_timestamp and expiry_timestamp != '':
+            try:
+                expiry_date = datetime.datetime.fromtimestamp(int(expiry_timestamp)).isoformat()
+            except (ValueError, TypeError):
+                expiry_date = None
+        
+        # Extract name and email from first UID
+        name = ""
+        email = ""
+        if key.get('uids'):
+            uid = key['uids'][0]
+            # Parse "Name (Comment) <email@example.com>"
+            if '<' in uid and '>' in uid:
+                parts = uid.split('<')
+                name = parts[0].strip()
+                email = parts[1].split('>')[0].strip()
+            else:
+                name = uid
+        
+        return {
+            'fingerprint': key.get('fingerprint', ''),
+            'keyid': key.get('keyid', ''),
+            'type': key.get('type', ''),
+            'length': key.get('length', 0),
+            'algo': key.get('algo', ''),
+            'trust': key.get('trust', 'unknown'),
+            'ownertrust': key.get('ownertrust', ''),
+            'uids': key.get('uids', []),
+            'name': name,
+            'email': email,
+            'created': key.get('date', ''),
+            'expires': expiry_date,
+            'expired': key.get('expired', False),
+            'disabled': key.get('disabled', False),
+            'revoked': key.get('revoked', False),
+            'is_secret': is_secret,
+        }
+    
+    return {
+        'public_keys': [enhance_key(k, False) for k in public_keys],
+        'secret_keys': [enhance_key(k, True) for k in secret_keys],
+        'total_public': len(public_keys),
+        'total_secret': len(secret_keys),
+    }
+
+
+def get_key_by_fingerprint(fingerprint: str) -> Optional[Dict[str, Any]]:
+    """
+    Get detailed information about a specific key.
+    
+    Args:
+        fingerprint: Key fingerprint
+        
+    Returns:
+        Key metadata dict or None if not found
+    """
+    all_keys = list_all_keys_with_metadata()
+    
+    # Search in secret keys first
+    for key in all_keys['secret_keys']:
+        if key['fingerprint'] == fingerprint:
+            return key
+    
+    # Then search in public keys
+    for key in all_keys['public_keys']:
+        if key['fingerprint'] == fingerprint:
+            return key
+    
+    return None
+
+
+def delete_key_by_fingerprint(fingerprint: str, delete_secret: bool = False) -> Dict[str, Any]:
+    """
+    Delete a key from the keyring.
+    
+    Args:
+        fingerprint: Key fingerprint to delete
+        delete_secret: If True, also delete secret key
+        
+    Returns:
+        Dict with success status and message
+    """
+    manager = GPGKeyManager()
+    
+    try:
+        # Delete secret key first if requested
+        if delete_secret:
+            result = manager.gpg.delete_keys(fingerprint, True, expect_passphrase=False)
+            if not result.ok:
+                return {
+                    'success': False,
+                    'error': f'Failed to delete secret key: {result.status}'
+                }
+        
+        # Delete public key
+        result = manager.gpg.delete_keys(fingerprint, False)
+        if result.ok:
+            return {
+                'success': True,
+                'message': f'Key {fingerprint[:16]}... deleted successfully'
+            }
+        else:
+            return {
+                'success': False,
+                'error': f'Failed to delete public key: {result.status}'
+            }
+    
+    except Exception as e:
+        return {
+            'success': False,
+            'error': str(e)
+        }

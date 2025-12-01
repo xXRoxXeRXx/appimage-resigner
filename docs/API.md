@@ -289,11 +289,29 @@ Sign the uploaded AppImage.
 
 **Form Data:**
 - `session_id` (string, required) - Session UUID
-- `key_id` (string, optional) - GPG Key ID (if not uploading key file)
+- `key_fingerprint` (string, optional) - Fingerprint of key from keyring (recommended)
+- `key_id` (string, optional) - GPG Key ID (manual entry or if not using fingerprint)
 - `passphrase` (string, optional) - Key passphrase
 - `embed_signature` (boolean, optional, default: false) - Embed signature in AppImage
 
-**Request Example:**
+**Key Selection Priority:**
+1. `key_fingerprint` - Use key from keyring (imported via `/api/keys/import`)
+2. Uploaded key file - If key was uploaded in session
+3. `key_id` - Manual key ID entry
+
+**Request Examples:**
+
+**Using key from keyring (recommended):**
+
+```bash
+curl -X POST http://localhost:8000/api/sign \
+  -F "session_id=550e8400-e29b-41d4-a716-446655440000" \
+  -F "key_fingerprint=FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3" \
+  -F "passphrase=my-secret-passphrase" \
+  -F "embed_signature=true"
+```
+
+**Using key ID:**
 
 ```bash
 curl -X POST http://localhost:8000/api/sign \
@@ -458,6 +476,209 @@ Download both signed AppImage and signature as ZIP archive.
 - Temporary ZIP file is created and cleaned up automatically
 - Both files have UUID prefix removed
 - Compression: `ZIP_DEFLATED`
+
+---
+
+## Key Management
+
+### POST `/api/keys/import`
+
+Import a GPG private key into the keyring.
+
+**Request:**
+- **Content-Type:** `multipart/form-data`
+- **Body:**
+  - `key_file` (file, required) - Private key file (.asc)
+
+**Example Request:**
+
+```bash
+curl -X POST http://localhost:8000/api/keys/import \
+  -F "key_file=@my-private-key.asc"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Key imported successfully",
+  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+  "key_data": {
+    "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+    "keyid": "E9843DAD1053E5C3",
+    "name": "IONOS SE",
+    "email": "info@ionos.de",
+    "type": "RSA",
+    "length": "3072",
+    "algo": "RSA",
+    "created": "1733147810",
+    "expires": "",
+    "trust": "u",
+    "is_secret": true
+  }
+}
+```
+
+**Error Response:** `400 Bad Request`
+
+```json
+{
+  "detail": "Invalid file format. Only .asc files are allowed."
+}
+```
+
+```json
+{
+  "detail": "Failed to import key. Please check the key format."
+}
+```
+
+**Notes:**
+- Only private keys (secret keys) can be imported
+- Key is automatically set to ultimate trust level
+- Duplicate imports update the existing key
+- Key becomes immediately available for signing
+
+---
+
+### GET `/api/keys/list`
+
+List all GPG keys in the keyring.
+
+**Response:** `200 OK`
+
+```json
+{
+  "public_keys": [
+    {
+      "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+      "keyid": "E9843DAD1053E5C3",
+      "name": "IONOS SE",
+      "email": "info@ionos.de",
+      "type": "RSA",
+      "length": "3072",
+      "algo": "RSA",
+      "created": "1733147810",
+      "expires": "",
+      "trust": "u",
+      "is_secret": false
+    }
+  ],
+  "secret_keys": [
+    {
+      "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+      "keyid": "E9843DAD1053E5C3",
+      "name": "IONOS SE",
+      "email": "info@ionos.de",
+      "type": "RSA",
+      "length": "3072",
+      "algo": "RSA",
+      "created": "1733147810",
+      "expires": "",
+      "trust": "u",
+      "is_secret": true
+    }
+  ],
+  "total_public": 1,
+  "total_secret": 1
+}
+```
+
+**Notes:**
+- Returns both public and secret keys
+- Secret keys are used for signing
+- Trust levels: u=ultimate, f=full, m=marginal, -=unknown
+
+---
+
+### GET `/api/keys/{fingerprint}`
+
+Get detailed information about a specific key.
+
+**Path Parameters:**
+- `fingerprint` (string, required) - Key fingerprint
+
+**Example Request:**
+
+```bash
+curl http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3",
+  "keyid": "E9843DAD1053E5C3",
+  "name": "IONOS SE",
+  "email": "info@ionos.de",
+  "type": "RSA",
+  "length": "3072",
+  "algo": "RSA",
+  "created": "1733147810",
+  "expires": "",
+  "trust": "u",
+  "is_secret": true,
+  "uids": [
+    "IONOS SE (Key for Linux Appimage signing) <info@ionos.de>"
+  ]
+}
+```
+
+**Error Response:** `404 Not Found`
+
+```json
+{
+  "detail": "Key not found"
+}
+```
+
+---
+
+### DELETE `/api/keys/{fingerprint}`
+
+Delete a key from the keyring.
+
+**Path Parameters:**
+- `fingerprint` (string, required) - Key fingerprint
+
+**Query Parameters:**
+- `delete_secret` (boolean, optional, default: false) - Delete secret key as well
+
+**Example Requests:**
+
+```bash
+# Delete public key only
+curl -X DELETE http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3
+
+# Delete both public and secret key
+curl -X DELETE "http://localhost:8000/api/keys/FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3?delete_secret=true"
+```
+
+**Response:** `200 OK`
+
+```json
+{
+  "success": true,
+  "message": "Key deleted successfully",
+  "fingerprint": "FC0EEDAC90A996F004AFFB4BE9843DAD1053E5C3"
+}
+```
+
+**Error Response:** `400 Bad Request`
+
+```json
+{
+  "detail": "Failed to delete key: Key not found"
+}
+```
+
+**Notes:**
+- By default, only public key is deleted
+- Use `delete_secret=true` to also delete the secret key
+- Deletion is permanent and cannot be undone
+- Key cannot be used for signing after deletion
 
 ---
 

@@ -37,6 +37,11 @@
         <header>
             <h1 data-i18n="app.title">🔐 Appimage Re-Signer</h1>
             <p class="subtitle" data-i18n="app.subtitle">Signieren Sie Ihre Appimages einfach über das Web</p>
+            <div style="margin-top: 16px;">
+                <a href="/static/keys.html" style="color: var(--global--color-ionos-blue); text-decoration: none; font-weight: 600;">
+                    🔑 Key-Verwaltung öffnen →
+                </a>
+            </div>
         </header>
 
         <main>
@@ -83,11 +88,26 @@
                 
                 <div class="key-options">
                     <div class="option-tabs">
-                        <button class="tab-button active" data-tab="upload" data-i18n="step2.privateKey">Key hochladen</button>
+                        <button class="tab-button active" data-tab="select">Vorhandenen Key wählen</button>
+                        <button class="tab-button" data-tab="upload" data-i18n="step2.privateKey">Key hochladen</button>
                         <button class="tab-button" data-tab="keyid" data-i18n="step2.keyId">Key ID eingeben</button>
                     </div>
 
-                    <div class="tab-content active" id="upload-tab">
+                    <div class="tab-content active" id="select-tab">
+                        <div class="form-group">
+                            <label for="key-select">Gespeicherten Key auswählen:</label>
+                            <select id="key-select" class="key-select">
+                                <option value="">Lade Keys...</option>
+                            </select>
+                            <small>Keys können in der <a href="/static/keys.html" target="_blank">Key-Verwaltung</a> importiert werden</small>
+                        </div>
+                        <div id="selected-key-info" style="display: none; margin-top: 1rem; padding: 1rem; background: var(--bg-secondary); border-radius: 8px; border-left: 4px solid var(--global--color-ionos-blue);">
+                            <h4 style="margin: 0 0 0.5rem 0;">🔐 Ausgewählter Key:</h4>
+                            <div id="selected-key-details"></div>
+                        </div>
+                    </div>
+
+                    <div class="tab-content" id="upload-tab">
                         <div class="upload-area" id="key-drop-zone">
                             <div class="upload-icon">🔑</div>
                             <p data-i18n="step2.dropzone">GPG Private Key hier ablegen oder klicken</p>

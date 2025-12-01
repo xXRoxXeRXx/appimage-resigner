@@ -97,6 +97,88 @@ document.addEventListener('DOMContentLoaded', async () => {
             languageSelect.value = lang;
         }
     });
+    
+    // Load available keys for dropdown
+    loadAvailableKeys();
+});
+
+// Load available keys from keyring
+async function loadAvailableKeys() {
+    const keySelect = document.getElementById('key-select');
+    if (!keySelect) return;
+    
+    try {
+        const response = await fetch('/api/keys/list');
+        const data = await response.json();
+        
+        // Clear existing options
+        keySelect.innerHTML = '';
+        
+        // Check if we have secret keys
+        if (data.secret_keys && data.secret_keys.length > 0) {
+            // Add placeholder option
+            const placeholderOption = document.createElement('option');
+            placeholderOption.value = '';
+            placeholderOption.textContent = 'Wählen Sie einen Key...';
+            placeholderOption.disabled = true;
+            placeholderOption.selected = true;
+            keySelect.appendChild(placeholderOption);
+            
+            // Add keys
+            data.secret_keys.forEach(key => {
+                const option = document.createElement('option');
+                option.value = key.fingerprint;
+                option.textContent = `${key.name || 'Unknown'} <${key.email || 'no email'}> (${key.keyid.substring(0, 8)})`;
+                option.dataset.keyData = JSON.stringify(key);
+                keySelect.appendChild(option);
+            });
+        } else {
+            // No keys available
+            const noKeysOption = document.createElement('option');
+            noKeysOption.value = '';
+            noKeysOption.textContent = 'Keine Keys verfügbar - In Key-Verwaltung importieren';
+            noKeysOption.disabled = true;
+            noKeysOption.selected = true;
+            keySelect.appendChild(noKeysOption);
+        }
+        
+        console.log(`✓ Loaded ${data.secret_keys.length} secret keys`);
+    } catch (error) {
+        console.error('Failed to load keys:', error);
+        keySelect.innerHTML = '<option value="" disabled selected>Fehler beim Laden der Keys</option>';
+    }
+}
+
+// Handle key selection
+document.addEventListener('DOMContentLoaded', () => {
+    const keySelect = document.getElementById('key-select');
+    const selectedKeyInfo = document.getElementById('selected-key-info');
+    const selectedKeyDetails = document.getElementById('selected-key-details');
+    
+    if (keySelect) {
+        keySelect.addEventListener('change', (event) => {
+            const selectedOption = event.target.options[event.target.selectedIndex];
+            
+            if (selectedOption.value) {
+                const keyData = JSON.parse(selectedOption.dataset.keyData);
+                
+                // Show key details
+                selectedKeyInfo.style.display = 'block';
+                selectedKeyDetails.innerHTML = `
+                    <p style="margin: 0.25rem 0;"><strong>Name:</strong> ${keyData.name || 'Unknown'}</p>
+                    <p style="margin: 0.25rem 0;"><strong>Email:</strong> ${keyData.email || 'N/A'}</p>
+                    <p style="margin: 0.25rem 0;"><strong>Fingerprint:</strong> <code style="font-size: 0.9em;">${keyData.fingerprint}</code></p>
+                    <p style="margin: 0.25rem 0;"><strong>Type:</strong> ${keyData.algo || keyData.type} ${keyData.length} bit</p>
+                `;
+                
+                // Check if ready to sign
+                checkReadyToSign();
+            } else {
+                selectedKeyInfo.style.display = 'none';
+                checkReadyToSign();
+            }
+        });
+    }
 });
 
 let sessionId = null;
@@ -145,6 +227,9 @@ document.querySelectorAll('.tab-button').forEach(button => {
         // Switch active tab content
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         document.getElementById(`${tab}-tab`).classList.add('active');
+        
+        // Check if ready to sign after tab switch
+        checkReadyToSign();
     });
 });
 
@@ -551,10 +636,40 @@ keyIdInput.addEventListener('input', checkReadyToSign);
 
 function checkReadyToSign() {
     const hasAppImage = appImageFile !== null;
-    const hasKey = keyFile !== null || keyIdInput.value.trim() !== '';
+    
+    // Check which tab is active and if key is provided
+    const selectTab = document.getElementById('select-tab');
+    const uploadTab = document.getElementById('upload-tab');
+    const keyidTab = document.getElementById('keyid-tab');
+    
+    let hasKey = false;
+    
+    if (selectTab && selectTab.classList.contains('active')) {
+        // Check if a key is selected in dropdown
+        const keySelect = document.getElementById('key-select');
+        hasKey = keySelect && keySelect.value !== '';
+    } else if (uploadTab && uploadTab.classList.contains('active')) {
+        // Check if a key file is uploaded
+        hasKey = keyFile !== null;
+    } else if (keyidTab && keyidTab.classList.contains('active')) {
+        // Check if a key ID is entered
+        hasKey = keyIdInput.value.trim() !== '';
+    }
     
     if (hasAppImage && hasKey) {
         enableStep(step3);
+        // Explicitly enable the sign button
+        const signBtn = document.getElementById('sign-button');
+        if (signBtn) {
+            signBtn.disabled = false;
+        }
+    } else {
+        disableStep(step3);
+        // Explicitly disable the sign button
+        const signBtn = document.getElementById('sign-button');
+        if (signBtn) {
+            signBtn.disabled = true;
+        }
     }
 }
 
@@ -565,9 +680,37 @@ async function signAppImage() {
     const formData = new FormData();
     formData.append('session_id', sessionId);
     
-    const keyId = keyIdInput.value.trim();
-    if (keyId) {
+    // Check which tab is active
+    const selectTab = document.getElementById('select-tab');
+    const uploadTab = document.getElementById('upload-tab');
+    const keyidTab = document.getElementById('keyid-tab');
+    
+    if (selectTab.classList.contains('active')) {
+        // Use selected key from dropdown
+        const keySelect = document.getElementById('key-select');
+        const selectedFingerprint = keySelect.value;
+        
+        if (!selectedFingerprint) {
+            toast.error('Bitte wählen Sie einen Key aus');
+            return;
+        }
+        
+        formData.append('key_fingerprint', selectedFingerprint);
+        console.log('Using selected key:', selectedFingerprint);
+        
+    } else if (uploadTab.classList.contains('active')) {
+        // Upload key file (existing behavior - will be handled by backend)
+        console.log('Using uploaded key file');
+        
+    } else if (keyidTab.classList.contains('active')) {
+        // Use Key ID
+        const keyId = keyIdInput.value.trim();
+        if (!keyId) {
+            toast.error('Bitte geben Sie eine Key ID ein');
+            return;
+        }
         formData.append('key_id', keyId);
+        console.log('Using key ID:', keyId);
     }
     
     const passphrase = passphraseInput.value;
@@ -680,6 +823,11 @@ resetButton.addEventListener('click', () => {
 function enableStep(step) {
     step.style.opacity = '1';
     step.style.pointerEvents = 'auto';
+}
+
+function disableStep(step) {
+    step.style.opacity = '0.5';
+    step.style.pointerEvents = 'none';
 }
 
 function formatFileSize(bytes) {

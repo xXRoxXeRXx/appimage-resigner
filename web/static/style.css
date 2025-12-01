@@ -353,7 +353,8 @@ label {
 
 input[type="text"],
 input[type="password"],
-textarea {
+textarea,
+select {
     width: 100%;
     padding: 14px 16px;
     border: 2px solid var(--border-color);
@@ -367,11 +368,33 @@ textarea {
 
 input[type="text"]:focus,
 input[type="password"]:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
     outline: none;
     border-color: var(--global--color-ionos-blue);
     box-shadow: 0 0 0 3px rgba(0, 61, 143, 0.1);
     background: var(--container-bg);
+}
+
+select {
+    cursor: pointer;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3e%3cpath fill='%23003d8f' d='M6 9L1 4h10z'/%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 16px center;
+    padding-right: 40px;
+}
+
+select option {
+    padding: 10px;
+}
+
+.key-select {
+    font-weight: 600;
+}
+
+.key-select option[disabled] {
+    color: var(--text-tertiary);
 }
 
 input::placeholder,

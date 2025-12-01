@@ -379,6 +379,7 @@ async def upload_signature(
 async def sign_appimage(
     session_id: str = Form(...),
     key_id: Optional[str] = Form(None),
+    key_fingerprint: Optional[str] = Form(None),
     passphrase: Optional[str] = Form(None),
     embed_signature: bool = Form(False),
     background_tasks: BackgroundTasks = None
@@ -402,8 +403,13 @@ async def sign_appimage(
         )
     
     try:
-        # Import key if uploaded and get fingerprint
-        if session.key_path:
+        # Priority 1: Use key_fingerprint if provided (from dropdown selection)
+        if key_fingerprint:
+            logger.info(f"Using selected key from keyring | session_id={session_id} | fingerprint={key_fingerprint[:16]}...")
+            key_id = key_fingerprint
+            
+        # Priority 2: Import key if uploaded and get fingerprint
+        elif session.key_path:
             manager = GPGKeyManager()
             try:
                 fingerprint = manager.import_key_get_fingerprint(str(session.key_path))
@@ -424,11 +430,14 @@ async def sign_appimage(
                     detail=f"Invalid key: {str(e)}. Please upload a PRIVATE key, not a PUBLIC key."
                 )
         
+        # Priority 3: Use key_id if provided (manual entry)
+        # (key_id is already set if provided)
+        
         # Check if we have a key_id to use
         if not key_id:
             raise HTTPException(
                 status_code=400, 
-                detail="No key_id provided and no key was uploaded. Please provide a key_id or upload a GPG key."
+                detail="No key provided. Please select a key, upload a GPG key, or enter a key ID."
             )
         
         # Initialize resigner
@@ -679,6 +688,167 @@ async def delete_session(session_id: str):
     cleanup_session(session_id)
     
     return {"status": "deleted"}
+
+
+# ============================================================================
+# Key Management Endpoints
+# ============================================================================
+
+@app.post("/api/keys/import")
+async def import_key(key_file: UploadFile = File(...)):
+    """
+    Import a GPG private key into the keyring.
+    
+    Args:
+        key_file: Private key file (.asc)
+        
+    Returns:
+        JSON with imported key metadata including fingerprint
+    """
+    try:
+        # Validate file extension
+        if not key_file.filename.endswith('.asc'):
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid file format. Only .asc files are allowed."
+            )
+        
+        # Read key content
+        key_content = await key_file.read()
+        key_content = key_content.decode('utf-8')
+        
+        logger.info(f"Key import attempt | filename={key_file.filename} | size={len(key_content)} bytes")
+        
+        # Import key
+        from src.key_manager import GPGKeyManager
+        manager = GPGKeyManager()
+        fingerprint = manager.import_key_from_string(key_content)
+        
+        if not fingerprint:
+            logger.error(f"Key import failed | filename={key_file.filename} | key_preview={key_content[:100]}")
+            raise HTTPException(
+                status_code=400, 
+                detail="Failed to import key. Please check the key format."
+            )
+        
+        # Get key metadata
+        from src.key_manager import get_key_by_fingerprint
+        key_data = get_key_by_fingerprint(fingerprint)
+        
+        logger.info(
+            f"Key imported | "
+            f"filename={key_file.filename} | "
+            f"fingerprint={fingerprint[:16]}... | "
+            f"name={key_data.get('name', 'Unknown')}"
+        )
+        
+        return {
+            "success": True,
+            "message": "Key imported successfully",
+            "fingerprint": fingerprint,
+            "key_data": key_data
+        }
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to import key | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to import key: {str(e)}")
+
+
+@app.get("/api/keys/list")
+async def list_keys():
+    """
+    List all GPG keys in the keyring.
+    
+    Returns:
+        JSON with public and secret keys, including metadata
+    """
+    try:
+        from src.key_manager import list_all_keys_with_metadata
+        
+        keys_data = list_all_keys_with_metadata()
+        
+        logger.info(
+            f"Keys listed | "
+            f"public_keys={keys_data['total_public']} | "
+            f"secret_keys={keys_data['total_secret']}"
+        )
+        
+        return keys_data
+    
+    except Exception as e:
+        logger.error(f"Failed to list keys | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to list keys: {str(e)}")
+
+
+@app.get("/api/keys/{fingerprint}")
+async def get_key_details(fingerprint: str):
+    """
+    Get detailed information about a specific key.
+    
+    Args:
+        fingerprint: Key fingerprint
+        
+    Returns:
+        JSON with key metadata
+    """
+    try:
+        from src.key_manager import get_key_by_fingerprint
+        
+        key_data = get_key_by_fingerprint(fingerprint)
+        
+        if not key_data:
+            raise HTTPException(status_code=404, detail="Key not found")
+        
+        logger.info(f"Key details retrieved | fingerprint={fingerprint[:16]}...")
+        
+        return key_data
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to get key details | fingerprint={fingerprint} | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get key details: {str(e)}")
+
+
+@app.delete("/api/keys/{fingerprint}")
+async def delete_key(fingerprint: str, delete_secret: bool = False):
+    """
+    Delete a key from the keyring.
+    
+    Args:
+        fingerprint: Key fingerprint to delete
+        delete_secret: If true, also delete secret key
+        
+    Returns:
+        JSON with success status
+    """
+    try:
+        from src.key_manager import delete_key_by_fingerprint
+        
+        result = delete_key_by_fingerprint(fingerprint, delete_secret)
+        
+        if result['success']:
+            logger.info(
+                f"Key deleted | "
+                f"fingerprint={fingerprint[:16]}... | "
+                f"delete_secret={delete_secret}"
+            )
+            return result
+        else:
+            logger.warning(
+                f"Key deletion failed | "
+                f"fingerprint={fingerprint} | "
+                f"error={result.get('error')}"
+            )
+            raise HTTPException(status_code=400, detail=result.get('error', 'Unknown error'))
+    
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete key | fingerprint={fingerprint} | error={str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete key: {str(e)}")
 
 
 @app.on_event("startup")
