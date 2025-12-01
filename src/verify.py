@@ -13,7 +13,7 @@ import base64
 import struct
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, Tuple
+from typing import Optional, Dict, Any
 
 
 def find_gpg_binary() -> Optional[str]:
@@ -57,7 +57,8 @@ class AppImageVerifier:
         """
         gpg_binary = find_gpg_binary()
         if gpg_binary:
-            self.gpg = gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary) if gpg_home else gnupg.GPG(gpgbinary=gpg_binary)
+            self.gpg = (gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary)
+                        if gpg_home else gnupg.GPG(gpgbinary=gpg_binary))
         else:
             self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
 
@@ -225,10 +226,14 @@ class AppImageVerifier:
                             'has_signature': True,
                             'valid': verified.valid if verified else False,
                             'key_id': verified.key_id if verified else None,
-                            'username': verified.username if verified and verified.username else 'Unknown',
-                            'fingerprint': verified.fingerprint if verified and verified.fingerprint else None,
-                            'timestamp': verified.sig_timestamp if verified and hasattr(verified, 'sig_timestamp') else None,
-                            'trust_level': verified.trust_text if verified and hasattr(verified, 'trust_text') else None,
+                            'username': (verified.username if verified and verified.username
+                                         else 'Unknown'),
+                            'fingerprint': (verified.fingerprint if verified and verified.fingerprint
+                                            else None),
+                            'timestamp': (verified.sig_timestamp if verified and
+                                          hasattr(verified, 'sig_timestamp') else None),
+                            'trust_level': (verified.trust_text if verified and
+                                            hasattr(verified, 'trust_text') else None),
                             'signature_data': sig_data[:200] + '...' if len(sig_data) > 200 else sig_data,
                             'embedded': True,
                             'status': verified.status if verified else 'unknown'
@@ -543,10 +548,10 @@ def parse_signature_metadata(signature_data: str) -> dict:
                 packet_length = decoded[idx] if idx < len(decoded) else 0
                 idx += 1
             elif length_type == 1:
-                packet_length = struct.unpack('>H', decoded[idx:idx+2])[0] if idx+1 < len(decoded) else 0
+                _ = struct.unpack('>H', decoded[idx:idx+2])[0] if idx+1 < len(decoded) else 0
                 idx += 2
             elif length_type == 2:
-                packet_length = struct.unpack('>I', decoded[idx:idx+4])[0] if idx+3 < len(decoded) else 0
+                _ = struct.unpack('>I', decoded[idx:idx+4])[0] if idx+3 < len(decoded) else 0
                 idx += 4
 
         # Packet type 2 = Signature Packet
@@ -621,7 +626,9 @@ def parse_signature_metadata(signature_data: str) -> dict:
                         if idx + 4 <= len(decoded):
                             timestamp = struct.unpack('>I', decoded[idx:idx+4])[0]
                             metadata['timestamp'] = timestamp
-                            metadata['timestamp_readable'] = datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                            metadata['timestamp_readable'] = (
+                                datetime.fromtimestamp(timestamp).strftime('%Y-%m-%d %H:%M:%S')
+                            )
 
                     # Subpacket type 16 = Issuer Key ID
                     elif sub_type == 16 and sub_length == 8:

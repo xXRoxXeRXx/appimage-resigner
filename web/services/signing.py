@@ -11,16 +11,16 @@ from datetime import datetime
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.resigner import AppImageResigner
-from src.key_manager import GPGKeyManager
-from web.core.exceptions import (
+from src.resigner import AppImageResigner  # noqa: E402
+from src.key_manager import GPGKeyManager  # noqa: E402
+from web.core.exceptions import (  # noqa: E402
     GPGSigningError,
     GPGKeyNotFoundError,
     MissingFileError,
     InvalidPassphraseError
 )
-from web.core.security import obfuscate_passphrase
-from web.api.models import SigningResponse, SigningStatus
+from web.core.security import obfuscate_passphrase  # noqa: E402
+from web.api.models import SigningResponse, SigningStatus  # noqa: E402
 
 
 class SigningService:

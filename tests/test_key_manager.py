@@ -1,7 +1,7 @@
 """
 Basic Key Manager Tests
 """
-from src.key_manager import KeyManager
+from src.key_manager import GPGKeyManager
 
 
 class TestKeyManagerBasics:
@@ -9,7 +9,7 @@ class TestKeyManagerBasics:
 
     def test_import_key(self, gpg_instance, generated_gpg_key, test_key_data):
         """Test importing a key"""
-        manager = KeyManager(gpg_home=gpg_instance.gnupghome)
+        manager = GPGKeyManager(gpg_home=gpg_instance.gnupghome)
 
         # Export key
         key_data = gpg_instance.export_keys(
@@ -24,7 +24,7 @@ class TestKeyManagerBasics:
 
     def test_list_keys(self, gpg_instance, generated_gpg_key):
         """Test listing keys"""
-        manager = KeyManager(gpg_home=gpg_instance.gnupghome)
+        manager = GPGKeyManager(gpg_home=gpg_instance.gnupghome)
 
         keys = manager.list_keys()
         assert len(keys["secret_keys"]) > 0 or len(keys["public_keys"]) > 0

@@ -11,7 +11,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Request
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 import aiofiles
@@ -21,28 +21,26 @@ from apscheduler.triggers.interval import IntervalTrigger
 # Import our existing signing logic
 import sys
 sys.path.append(str(Path(__file__).parent.parent))
-from src.resigner import AppImageResigner
-from src.verify import AppImageVerifier
-from src.key_manager import GPGKeyManager
+from src.resigner import AppImageResigner  # noqa: E402
+from src.verify import AppImageVerifier  # noqa: E402
+from src.key_manager import GPGKeyManager  # noqa: E402
 
 # Import logging configuration
-from web.core.logging_config import (
+from web.core.logging_config import (  # noqa: E402
     setup_logging,
     get_logger,
-    log_operation,
     log_audit_event,
     log_security_event,
     log_file_operation
 )
-from web.core.config import settings
-from web.core.validation import validate_appimage_file
-from web.core.security import get_client_ip, sanitize_filename
-from web.services.streaming import StreamingUpload
+from web.core.config import settings  # noqa: E402
+from web.core.validation import validate_appimage_file  # noqa: E402
+from web.core.security import get_client_ip, sanitize_filename  # noqa: E402
+from web.services.streaming import StreamingUpload  # noqa: E402
 
 # Import security middlewares
-from web.middleware.security import (
+from web.middleware.security import (  # noqa: E402
     SecurityHeadersMiddleware,
-    CSRFProtectionMiddleware,
     FileSizeValidationMiddleware,
     RateLimitMiddleware,
 )
@@ -1170,13 +1168,6 @@ async def get_upload_status(session_id: str):
 # ============================================================================
 # End Streaming Upload Endpoints
 # ============================================================================
-
-
-@app.on_event("startup")
-async def startup_event():
-    """Run on application startup"""
-    # Clean up old sessions
-    cleanup_old_sessions()
 
 
 if __name__ == "__main__":

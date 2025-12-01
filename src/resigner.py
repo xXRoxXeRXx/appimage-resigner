@@ -61,7 +61,8 @@ class AppImageResigner:
         """
         gpg_binary = find_gpg_binary()
         if gpg_binary:
-            self.gpg = gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary) if gpg_home else gnupg.GPG(gpgbinary=gpg_binary)
+            self.gpg = (gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary)
+                        if gpg_home else gnupg.GPG(gpgbinary=gpg_binary))
         else:
             self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
 

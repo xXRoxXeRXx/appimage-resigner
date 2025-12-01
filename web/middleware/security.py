@@ -4,11 +4,10 @@ Security Middleware for AppImage Re-Signer
 Implements various security measures including CSP, CSRF protection, and security headers
 """
 
-from typing import Callable, Optional
-from fastapi import Request, Response, HTTPException, status
+from typing import Callable
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.datastructures import Headers
 import secrets
 from datetime import datetime, timedelta
 
@@ -51,7 +50,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
         # Content Security Policy
         if self.enable_csp:
-            csp_header = "Content-Security-Policy" if not self.csp_report_only else "Content-Security-Policy-Report-Only"
+            csp_header = ("Content-Security-Policy" if not self.csp_report_only
+                          else "Content-Security-Policy-Report-Only")
 
             # CSP directives
             csp_directives = [
@@ -306,7 +306,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=status.HTTP_429_TOO_MANY_REQUESTS,
                 content={
-                    "detail": f"Rate limit exceeded. Max {self.max_requests} requests per {self.window_seconds} seconds."
+                    "detail": (f"Rate limit exceeded. Max {self.max_requests} requests "
+                               f"per {self.window_seconds} seconds.")
                 },
                 headers={
                     "Retry-After": str(self.window_seconds)

@@ -10,9 +10,9 @@ from datetime import datetime
 
 sys.path.append(str(Path(__file__).parent.parent.parent))
 
-from src.verify import AppImageVerifier
-from web.core.exceptions import MissingFileError, GPGVerificationError
-from web.api.models import VerificationResponse, SignatureStatus
+from src.verify import AppImageVerifier  # noqa: E402
+from web.core.exceptions import MissingFileError, GPGVerificationError  # noqa: E402
+from web.api.models import VerificationResponse, SignatureStatus  # noqa: E402
 
 
 class VerificationService:

@@ -4,7 +4,7 @@ Provides type-safe data models for the AppImage Re-Signer API.
 """
 
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict
 from enum import Enum
 
 from pydantic import (

@@ -6,11 +6,11 @@ Provides chunked upload, resume support, and memory-efficient file operations
 
 import hashlib
 from pathlib import Path
-from typing import Optional, Dict, Any, BinaryIO
+from typing import Optional, Dict, Any
 from datetime import datetime
 
 import aiofiles
-from fastapi import UploadFile, HTTPException
+from fastapi import HTTPException
 
 from web.core.logging_config import get_logger
 from web.core.config import settings

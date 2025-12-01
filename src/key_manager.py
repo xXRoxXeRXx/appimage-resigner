@@ -464,19 +464,19 @@ def main() -> None:
     gen_parser.add_argument('--comment', default='', help='Optional comment')
     gen_parser.add_argument('--passphrase', help='Passphrase for the key')
     gen_parser.add_argument('--no-expire', action='store_true',
-                           help='Key never expires (recommended)')
+                            help='Key never expires (recommended)')
 
     # List keys command
     list_parser = subparsers.add_parser('list', help='List GPG keys')
     list_parser.add_argument('--secret', action='store_true',
-                            help='List private keys instead of public')
+                             help='List private keys instead of public')
 
     # Export key command
     export_parser = subparsers.add_parser('export', help='Export a key')
     export_parser.add_argument('key_id', help='Key ID or fingerprint')
     export_parser.add_argument('output', help='Output file path')
     export_parser.add_argument('--secret', action='store_true',
-                              help='Export private key (use with caution!)')
+                               help='Export private key (use with caution!)')
     export_parser.add_argument('--passphrase', help='Passphrase for private key')
 
     # Import key command
