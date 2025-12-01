@@ -415,8 +415,20 @@ function updateUploadProgress(percent, speed, remainingSeconds, loaded, total) {
 }
 
 async function uploadAppImage(file) {
+    const CHUNKED_THRESHOLD = 50 * 1024 * 1024; // 50MB
+    
     try {
-        const data = await uploadAppImageWithProgress(file);
+        let data;
+        
+        // Automatically choose upload method based on file size
+        if (file.size > CHUNKED_THRESHOLD) {
+            console.log(`Large file detected (${formatFileSize(file.size)}), using chunked upload`);
+            toast.info(`📦 Große Datei - verwende optimierten Upload...`);
+            data = await uploadAppImageChunked(file);
+        } else {
+            console.log(`Using regular upload for ${formatFileSize(file.size)} file`);
+            data = await uploadAppImageWithProgress(file);
+        }
         
         console.log('✓ AppImage uploaded successfully');
         console.log('Response data:', data);
@@ -452,6 +464,36 @@ async function uploadAppImage(file) {
         console.error('Upload error:', error);
         toast.error('Upload fehlgeschlagen: ' + error.message);
     }
+}
+
+// Chunked upload for large files (>50MB)
+async function uploadAppImageChunked(file) {
+    // Create ChunkedUploader instance
+    const uploader = new ChunkedUploader({
+        chunkSize: 5 * 1024 * 1024,  // 5MB chunks
+        maxRetries: 3,
+        parallelUploads: 3,
+        onProgress: (progress) => {
+            // Update UI with chunk progress
+            const percent = Math.round(progress.progress);
+            const speed = progress.speed / (1024 * 1024); // Convert to MB/s
+            const remainingSeconds = progress.eta;
+            const loaded = progress.uploadedChunks * uploader.chunkSize;
+            const total = file.size;
+            
+            updateUploadProgress(percent, speed, remainingSeconds, loaded, total);
+        },
+        onComplete: (result) => {
+            console.log('Chunked upload complete:', result);
+        },
+        onError: (error) => {
+            console.error('Chunked upload error:', error);
+        }
+    });
+    
+    // Start chunked upload
+    const result = await uploader.uploadFile(file, sessionId, 'appimage');
+    return result;
 }
 
 async function uploadAppImageOLD(file) {
