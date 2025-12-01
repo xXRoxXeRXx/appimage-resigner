@@ -223,6 +223,50 @@ docker ps --filter "name=appimage-resigner"
 # Should show: STATUS: Up X minutes (healthy)
 ```
 
+### Problem 10: "GPG: can't create directory /home/appuser/.gnupg"
+**Symptom:**
+```
+gpg: Fatal: can't create directory '/home/appuser/.gnupg': No such file or directory
+BrokenPipeError: [Errno 32] Broken pipe
+Error signing file: None
+```
+
+**Root Cause:**
+- appuser created without home directory
+- GPG requires ~/.gnupg directory with 700 permissions
+- Signing operations fail when GPG can't initialize
+
+**Solution:**
+Dockerfile must create appuser WITH home directory:
+```dockerfile
+# CORRECT:
+RUN groupadd -r appuser && useradd -r -g appuser -u 1000 -m -d /home/appuser appuser
+
+# Create .gnupg directory with correct permissions
+RUN mkdir -p /home/appuser/.gnupg && \
+    chown -R appuser:appuser /home/appuser/.gnupg && \
+    chmod 700 /home/appuser/.gnupg
+```
+
+Entrypoint should also ensure it exists:
+```bash
+# In docker-entrypoint.sh
+if [ ! -d /home/appuser/.gnupg ]; then
+    mkdir -p /home/appuser/.gnupg
+    chown -R appuser:appuser /home/appuser/.gnupg
+    chmod 700 /home/appuser/.gnupg
+fi
+```
+
+**Verification:**
+```bash
+docker exec appimage-resigner ls -la /home/appuser/
+# Should show: drwx------ appuser appuser ... .gnupg
+
+docker exec appimage-resigner gpg --version
+# Should work without errors
+```
+
 ## 🧪 Testing Checklist
 
 ### Lokal testen
