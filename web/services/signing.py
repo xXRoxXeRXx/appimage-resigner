@@ -13,7 +13,6 @@ sys.path.append(str(Path(__file__).parent.parent.parent))
 
 from src.resigner import AppImageResigner
 from src.key_manager import GPGKeyManager
-from web.core.config import settings
 from web.core.exceptions import (
     GPGSigningError,
     GPGKeyNotFoundError,

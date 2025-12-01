@@ -15,7 +15,6 @@ import sys
 import os
 import argparse
 import gnupg  # type: ignore[import-untyped]
-import subprocess
 import shutil
 from pathlib import Path
 from typing import Optional, Union
@@ -152,7 +151,7 @@ class AppImageResigner:
                     data_end -= 1
 
                 original_data = original_data[:data_end]
-                print(f"ℹ Removed existing embedded signature")
+                print("ℹ Removed existing embedded signature")
 
             # Create a temporary file with clean data for signing
             import tempfile
@@ -215,7 +214,7 @@ class AppImageResigner:
                 # Clean up temp file
                 try:
                     os.unlink(temp_path)
-                except:
+                except Exception:
                     pass
 
         except Exception as e:

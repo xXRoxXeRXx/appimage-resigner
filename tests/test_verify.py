@@ -1,7 +1,6 @@
 """
 Basic Verification Tests
 """
-import pytest
 from src.verify import AppImageVerifier
 
 

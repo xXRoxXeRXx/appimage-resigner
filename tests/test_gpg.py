@@ -1,15 +1,14 @@
 ﻿"""
 Basic GPG Functionality Tests
 """
-import pytest
 import subprocess
 
 
 class TestGPGBasics:
-    \"\"\"Test basic GPG functionality\"\"\"
+    """Test basic GPG functionality"""
 
     def test_gpg_installed(self):
-        \"\"\"Test GPG is installed\"\"\"
+        """Test GPG is installed"""
         result = subprocess.run(
             ["gpg", "--version"],
             capture_output=True,
@@ -25,7 +24,7 @@ class TestGPGBasics:
         test_key_data,
         sample_appimage
     ):
-        \"\"\"Test basic sign and verify cycle\"\"\"
+        """Test basic sign and verify cycle"""
         # Sign file
         with open(sample_appimage, 'rb') as f:
             signed = gpg_instance.sign_file(

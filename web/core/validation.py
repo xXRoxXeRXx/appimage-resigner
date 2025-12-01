@@ -3,7 +3,6 @@ File validation utilities for AppImage uploads.
 Ensures uploaded files are valid AppImage files.
 """
 
-import struct
 from pathlib import Path
 from typing import Tuple, Optional
 import logging

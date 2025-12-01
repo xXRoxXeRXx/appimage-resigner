@@ -3,7 +3,6 @@ Configuration management using pydantic-settings.
 Loads configuration from environment variables and .env file.
 """
 
-import os
 from pathlib import Path
 from typing import List, Optional
 from functools import cached_property

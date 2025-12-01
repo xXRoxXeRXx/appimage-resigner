@@ -1,7 +1,6 @@
 """
 Basic Key Manager Tests
 """
-import pytest
 from src.key_manager import KeyManager
 
 

@@ -238,7 +238,7 @@ class AppImageVerifier:
                         try:
                             os.unlink(data_path)
                             os.unlink(sig_path)
-                        except:
+                        except Exception:
                             pass
                 else:
                     print(f"🔍 No embedded signature found in {appimage_path}")
@@ -297,7 +297,7 @@ class AppImageVerifier:
             return {
                 'valid': False,
                 'has_signature': False,
-                'error': f"No signature found (neither embedded nor external .asc file)"
+                'error': "No signature found (neither embedded nor external .asc file)"
             }
 
         try:
@@ -345,7 +345,7 @@ class AppImageVerifier:
             appimage_path: Path to the AppImage file
         """
         print("=" * 60)
-        print(f"AppImage Signature Verification")
+        print("AppImage Signature Verification")
         print("=" * 60)
         print(f"File: {appimage_path}")
         print()

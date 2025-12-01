@@ -4,7 +4,6 @@ Streaming Upload Service for Large Files
 Provides chunked upload, resume support, and memory-efficient file operations
 """
 
-import os
 import hashlib
 from pathlib import Path
 from typing import Optional, Dict, Any, BinaryIO
@@ -150,7 +149,7 @@ class StreamingUpload:
 
             if actual_checksum_sha256 != checksum and actual_checksum_md5 != checksum:
                 logger.error(
-                    f"Checksum mismatch | "
+                    "Checksum mismatch | "
                     f"received={checksum[:16]}... | "
                     f"sha256={actual_checksum_sha256[:16]}... | "
                     f"md5={actual_checksum_md5[:16]}..."

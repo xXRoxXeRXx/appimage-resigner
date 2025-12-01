@@ -4,8 +4,8 @@ GPG Key Manager
 Manages GPG keys for AppImage signing.
 """
 
-import sys
 import os
+import sys
 import argparse
 import gnupg  # type: ignore[import]
 from pathlib import Path
@@ -54,7 +54,8 @@ class GPGKeyManager:
         """
         gpg_binary = find_gpg_binary()
         if gpg_binary:
-            self.gpg = gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary) if gpg_home else gnupg.GPG(gpgbinary=gpg_binary)
+            self.gpg = (gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary)
+                        if gpg_home else gnupg.GPG(gpgbinary=gpg_binary))
         else:
             self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
 
@@ -99,7 +100,7 @@ class GPGKeyManager:
         key = self.gpg.gen_key(input_data)
 
         if key:
-            print(f"\n✓ Key generated successfully!")
+            print("\n✓ Key generated successfully!")
             print(f"Fingerprint: {key}")
             return {
                 'success': True,
@@ -152,7 +153,7 @@ class GPGKeyManager:
             if key['expires']:
                 print(f"Expires:      {key['expires']}")
             else:
-                print(f"Expires:      Never")
+                print("Expires:      Never")
 
             print("-" * 80)
 
@@ -287,7 +288,7 @@ class GPGKeyManager:
         result = self.gpg.import_keys(key_data)
 
         # Debug: Log import result details
-        print(f"GPG Import Result:")
+        print("GPG Import Result:")
         print(f"  Count: {result.count}")
         print(f"  Fingerprints: {result.fingerprints}")
         print(f"  Results: {result.results}")
@@ -304,12 +305,12 @@ class GPGKeyManager:
             has_secret = any(k['fingerprint'] == fingerprint for k in secret_keys)
 
             if not has_secret:
-                print(f"✗ Key imported but no secret key found!")
+                print("✗ Key imported but no secret key found!")
                 print(f"  Fingerprint: {fingerprint}")
                 print("  This key cannot be used for signing.")
                 raise ValueError(f"No secret key found for fingerprint {fingerprint}")
 
-            print(f"✓ Successfully imported PRIVATE key")
+            print("✓ Successfully imported PRIVATE key")
             print(f"  Fingerprint: {fingerprint}")
 
             # Set ultimate trust for the imported key
@@ -385,7 +386,7 @@ class GPGKeyManager:
         result = self.gpg.import_keys(key_content)
 
         # Debug: Log import result details
-        print(f"GPG Import Result:")
+        print("GPG Import Result:")
         print(f"  Count: {result.count}")
         print(f"  Fingerprints: {result.fingerprints}")
         print(f"  Results: {result.results}")
@@ -402,12 +403,12 @@ class GPGKeyManager:
             has_secret = any(k['fingerprint'] == fingerprint for k in secret_keys)
 
             if not has_secret:
-                print(f"✗ Key imported but no secret key found!")
+                print("✗ Key imported but no secret key found!")
                 print(f"  Fingerprint: {fingerprint}")
                 print("  This key cannot be used for signing.")
                 raise ValueError(f"No secret key found for fingerprint {fingerprint}")
 
-            print(f"✓ Successfully imported PRIVATE key")
+            print("✓ Successfully imported PRIVATE key")
             print(f"  Fingerprint: {fingerprint}")
 
             # Set ultimate trust for the imported key

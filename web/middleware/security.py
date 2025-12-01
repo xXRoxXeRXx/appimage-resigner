@@ -10,11 +10,9 @@ from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.datastructures import Headers
 import secrets
-import hashlib
 from datetime import datetime, timedelta
 
 from web.core.logging_config import get_logger
-from web.core.config import settings
 
 logger = get_logger(__name__)
 
@@ -58,8 +56,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # CSP directives
             csp_directives = [
                 "default-src 'self'",
-                "script-src 'self' 'unsafe-inline'",  # unsafe-inline needed for inline scripts
-                "style-src 'self' 'unsafe-inline'",   # unsafe-inline needed for inline styles
+                "script-src 'sel' 'unsafe-inline'",  # unsafe-inline needed for inline scripts
+                "style-src 'sel' 'unsafe-inline'",   # unsafe-inline needed for inline styles
                 "img-src 'self' data:",               # data: for inline images
                 "font-src 'self'",
                 "connect-src 'self'",                 # API calls to same origin

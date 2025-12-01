@@ -4,7 +4,6 @@ FastAPI Web Application for AppImage Re-Signing
 Provides REST API endpoints for uploading, signing, and downloading AppImages
 """
 
-import os
 import uuid
 import shutil
 from pathlib import Path
@@ -836,7 +835,7 @@ async def import_key(key_file: UploadFile = File(...)):
         key_data = get_key_by_fingerprint(fingerprint)
 
         logger.info(
-            f"Key imported | "
+            "Key imported | "
             f"filename={key_file.filename} | "
             f"fingerprint={fingerprint[:16]}... | "
             f"name={key_data.get('name', 'Unknown')}"
@@ -870,7 +869,7 @@ async def list_keys():
         keys_data = list_all_keys_with_metadata()
 
         logger.info(
-            f"Keys listed | "
+            "Keys listed | "
             f"public_keys={keys_data['total_public']} | "
             f"secret_keys={keys_data['total_secret']}"
         )
@@ -931,14 +930,14 @@ async def delete_key(fingerprint: str, delete_secret: bool = False):
 
         if result['success']:
             logger.info(
-                f"Key deleted | "
+                "Key deleted | "
                 f"fingerprint={fingerprint[:16]}... | "
                 f"delete_secret={delete_secret}"
             )
             return result
         else:
             logger.warning(
-                f"Key deletion failed | "
+                "Key deletion failed | "
                 f"fingerprint={fingerprint} | "
                 f"error={result.get('error')}"
             )

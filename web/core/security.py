@@ -170,7 +170,7 @@ def obfuscate_passphrase(passphrase: str) -> None:
         location = id(passphrase) + 20  # Offset to string data
         size = len(passphrase)
         ctypes.memset(location, 0, size)
-    except:
+    except Exception:
         # If it fails, at least we tried
         pass
 
