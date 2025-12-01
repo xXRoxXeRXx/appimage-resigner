@@ -486,14 +486,39 @@ async function handleKeySelect(e) {
     const file = e.target.files[0];
     if (!file) return;
     
-    keyFile = file;
+    // Validate file extension
+    if (!file.name.match(/\.(key|asc|gpg|pgp)$/i)) {
+        toast.error('❌ Ungültiger Dateityp. Bitte wählen Sie eine GPG-Schlüsseldatei (.key, .asc, .gpg, .pgp)');
+        return;
+    }
     
-    // Show file info
-    keyInfo.querySelector('.filename').textContent = file.name;
-    keyInfo.style.display = 'flex';
+    // Read file content to check if it's a private key
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+        const content = event.target.result;
+        
+        // Check if this is a private key
+        if (!content.includes('BEGIN PGP PRIVATE KEY BLOCK') && !content.includes('BEGIN PRIVATE KEY')) {
+            toast.error('❌ Dies ist kein privater Schlüssel! Bitte laden Sie einen PRIVATEN Schlüssel hoch, nicht einen öffentlichen Schlüssel.');
+            keyFileInput.value = ''; // Reset file input
+            return;
+        }
+        
+        keyFile = file;
+        
+        // Show file info
+        keyInfo.querySelector('.filename').textContent = file.name;
+        keyInfo.style.display = 'flex';
+        
+        // Upload file
+        await uploadKey(file);
+    };
     
-    // Upload file
-    await uploadKey(file);
+    reader.onerror = () => {
+        toast.error('❌ Fehler beim Lesen der Schlüsseldatei');
+    };
+    
+    reader.readAsText(file);
 }
 
 async function uploadKey(file) {

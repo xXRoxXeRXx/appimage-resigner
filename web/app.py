@@ -405,16 +405,24 @@ async def sign_appimage(
         # Import key if uploaded and get fingerprint
         if session.key_path:
             manager = GPGKeyManager()
-            fingerprint = manager.import_key_get_fingerprint(str(session.key_path))
-            if fingerprint:
-                session.key_fingerprint = fingerprint
-                logger.info(f"Key imported | session_id={session_id} | fingerprint={fingerprint}")
-                # Use fingerprint as key_id if not provided
-                if not key_id:
-                    key_id = fingerprint
-                    logger.info(f"Using imported key fingerprint as key_id | session_id={session_id}")
-            else:
-                raise HTTPException(status_code=400, detail="Failed to import GPG key")
+            try:
+                fingerprint = manager.import_key_get_fingerprint(str(session.key_path))
+                if fingerprint:
+                    session.key_fingerprint = fingerprint
+                    logger.info(f"Key imported | session_id={session_id} | fingerprint={fingerprint}")
+                    # Use fingerprint as key_id if not provided
+                    if not key_id:
+                        key_id = fingerprint
+                        logger.info(f"Using imported key fingerprint as key_id | session_id={session_id}")
+                else:
+                    raise HTTPException(status_code=400, detail="Failed to import GPG key")
+            except ValueError as e:
+                # Key validation failed (e.g., public key instead of private key)
+                logger.error(f"Key validation failed | session_id={session_id} | error={str(e)}")
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Invalid key: {str(e)}. Please upload a PRIVATE key, not a PUBLIC key."
+                )
         
         # Check if we have a key_id to use
         if not key_id:

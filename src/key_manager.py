@@ -253,7 +253,10 @@ class GPGKeyManager:
             key_file: Path to the key file
         
         Returns:
-            Fingerprint of the imported key, or None if import failed
+            Fingerprint of the imported key if it's a private key, or None if import failed
+        
+        Raises:
+            ValueError: If the key is a public key, not a private key
         """
         key_path = Path(key_file)
         
@@ -264,11 +267,29 @@ class GPGKeyManager:
         with open(key_path, 'r') as f:
             key_data = f.read()
         
+        # Check if this is a private key
+        if 'BEGIN PGP PRIVATE KEY BLOCK' not in key_data and 'BEGIN PRIVATE KEY' not in key_data:
+            print("✗ This is not a private key!")
+            print("  The uploaded key appears to be a PUBLIC key.")
+            print("  You need to upload a PRIVATE key for signing.")
+            raise ValueError("Not a private key: File must contain a private key (BEGIN PGP PRIVATE KEY BLOCK)")
+        
         result = self.gpg.import_keys(key_data)
         
         if result.count > 0 and result.fingerprints:
             fingerprint = result.fingerprints[0]
-            print(f"✓ Successfully imported key")
+            
+            # Verify the key actually has a secret key
+            secret_keys = self.gpg.list_keys(True)  # True = secret keys only
+            has_secret = any(k['fingerprint'] == fingerprint for k in secret_keys)
+            
+            if not has_secret:
+                print(f"✗ Key imported but no secret key found!")
+                print(f"  Fingerprint: {fingerprint}")
+                print("  This key cannot be used for signing.")
+                raise ValueError(f"No secret key found for fingerprint {fingerprint}")
+            
+            print(f"✓ Successfully imported PRIVATE key")
             print(f"  Fingerprint: {fingerprint}")
             return fingerprint
         else:
