@@ -122,6 +122,10 @@ class StreamingUpload:
             Chunk upload status
         """
         if session_id not in cls.upload_sessions:
+            logger.error(
+                f"Upload session not found | session_id={session_id} | "
+                f"available_sessions={list(cls.upload_sessions.keys())}"
+            )
             raise HTTPException(status_code=404, detail="Upload session not found")
         
         session = cls.upload_sessions[session_id]
@@ -139,8 +143,18 @@ class StreamingUpload:
         
         # Verify checksum if provided
         if checksum:
-            actual_checksum = hashlib.md5(chunk_data).hexdigest()
-            if actual_checksum != checksum:
+            # Try SHA-256 first (modern browsers use this)
+            actual_checksum_sha256 = hashlib.sha256(chunk_data).hexdigest()
+            # Fallback to MD5 for compatibility
+            actual_checksum_md5 = hashlib.md5(chunk_data).hexdigest()
+            
+            if actual_checksum_sha256 != checksum and actual_checksum_md5 != checksum:
+                logger.error(
+                    f"Checksum mismatch | "
+                    f"received={checksum[:16]}... | "
+                    f"sha256={actual_checksum_sha256[:16]}... | "
+                    f"md5={actual_checksum_md5[:16]}..."
+                )
                 raise HTTPException(
                     status_code=400,
                     detail="Chunk checksum mismatch"

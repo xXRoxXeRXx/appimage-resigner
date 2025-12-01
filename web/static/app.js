@@ -844,30 +844,21 @@ function showSuccess(data) {
     
     // Add ZIP download handler with loading indicator
     downloadZip.addEventListener('click', function(e) {
-        e.preventDefault();
+        // Don't prevent default - let browser handle download
         
         // Show loading state
         const btn = this;
-        const icon = btn.querySelector('.download-icon');
-        const text = btn.querySelector('.download-text');
         const spinner = btn.querySelector('.download-spinner');
         
         btn.classList.add('loading');
         if (spinner) spinner.style.display = 'inline-block';
         
-        // Create a hidden iframe for download
-        const iframe = document.createElement('iframe');
-        iframe.style.display = 'none';
-        iframe.src = btn.href;
-        document.body.appendChild(iframe);
-        
-        // Reset loading state after download starts (estimated 2-3 seconds)
+        // Reset loading state after download actually starts (wait for server response)
         setTimeout(() => {
             btn.classList.remove('loading');
             if (spinner) spinner.style.display = 'none';
-            document.body.removeChild(iframe);
             toast.success('✓ ZIP-Download gestartet');
-        }, 3000);
+        }, 6000);  // 6 seconds to ensure download has started
     });
     
     // Scroll to result

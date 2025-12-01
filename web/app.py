@@ -901,7 +901,7 @@ async def init_chunked_upload(
 @app.post("/api/upload/chunk/{session_id}")
 async def upload_chunk(
     session_id: str,
-    chunk_number: int = Form(...),
+    chunk_number: str = Form(...),  # FormData sends as string
     checksum: Optional[str] = Form(None),
     chunk: UploadFile = File(...)
 ):
@@ -910,28 +910,42 @@ async def upload_chunk(
     
     Args:
         session_id: Upload session ID
-        chunk_number: Chunk number (0-indexed)
-        checksum: Optional MD5 checksum for verification
+        chunk_number: Chunk number (0-indexed) as string
+        checksum: Optional MD5/SHA-256 checksum for verification
         chunk: Chunk binary data
         
     Returns:
         Chunk upload status with progress
     """
     try:
+        # Convert chunk_number to int
+        chunk_num = int(chunk_number)
+        
+        logger.info(
+            f"Chunk upload request | session_id={session_id} | "
+            f"chunk_number={chunk_num} | checksum={checksum[:16] if checksum else 'none'}..."
+        )
+        
         # Read chunk data
         chunk_data = await chunk.read()
+        
+        logger.info(f"Chunk data read | size={len(chunk_data)} bytes")
         
         # Upload chunk
         result = await StreamingUpload.upload_chunk(
             session_id=session_id,
-            chunk_number=chunk_number,
+            chunk_number=chunk_num,
             chunk_data=chunk_data,
             checksum=checksum
         )
         
         return result
         
-    except HTTPException:
+    except HTTPException as he:
+        logger.error(
+            f"HTTP Exception in chunk upload | session_id={session_id} | "
+            f"chunk={chunk_number} | status={he.status_code} | detail={he.detail}"
+        )
         raise
     except Exception as e:
         logger.error(
