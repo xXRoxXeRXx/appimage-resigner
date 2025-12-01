@@ -172,58 +172,6 @@ body {
     background: rgba(255, 255, 255, 0.25);
 }
 
-/* Language Switcher */
-.language-switcher {
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    display: flex;
-    gap: 8px;
-    z-index: 10;
-}
-
-.lang-button {
-    background: var(--upload-zone-bg);
-    border: 2px solid transparent;
-    border-radius: 10px;
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 24px;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 12px var(--shadow-sm);
-}
-
-.lang-button:hover {
-    transform: translateY(-2px) scale(1.05);
-    box-shadow: 0 8px 20px var(--shadow-md);
-    background: var(--upload-zone-hover);
-}
-
-.lang-button:active {
-    transform: translateY(0) scale(0.98);
-}
-
-.lang-button.active {
-    border-color: var(--global--color-ionos-blue);
-    background: var(--upload-zone-hover);
-    box-shadow: 0 6px 16px var(--shadow-md);
-}
-
-.lang-button .flag {
-    font-size: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-[data-theme="dark"] .lang-button.active {
-    border-color: #4a90e2;
-}
-
 header {
     text-align: center;
     margin-bottom: 40px;
@@ -1179,6 +1127,10 @@ footer {
     color: var(--text-secondary);
     font-size: 14px;
     line-height: 1.8;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
 }
 
 footer a {
@@ -1191,6 +1143,61 @@ footer a {
 footer a:hover {
     color: var(--global--color-dark-midnight);
     text-decoration: underline;
+}
+
+/* Language Selector in Footer */
+.language-selector {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 16px;
+    background: var(--upload-zone-bg);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px var(--shadow-sm);
+    transition: all 0.3s ease;
+}
+
+.language-selector:hover {
+    box-shadow: 0 4px 12px var(--shadow-md);
+}
+
+.language-icon {
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.language-dropdown {
+    background: transparent;
+    border: none;
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    outline: none;
+    transition: all 0.3s ease;
+    font-family: inherit;
+}
+
+.language-dropdown:hover {
+    background: var(--upload-zone-hover);
+}
+
+.language-dropdown:focus {
+    background: var(--upload-zone-hover);
+    box-shadow: 0 0 0 2px var(--global--color-ionos-blue);
+}
+
+.language-dropdown option {
+    background: var(--container-bg);
+    color: var(--text-primary);
+    padding: 8px;
+}
+
+[data-theme="dark"] .language-dropdown option {
+    background: var(--card-bg);
 }
 
 .version-badge {
@@ -1241,19 +1248,6 @@ footer a:hover {
 
     .subtitle {
         font-size: 14px;
-    }
-
-    /* Language switcher on mobile */
-    .language-switcher {
-        top: 15px;
-        left: 15px;
-        gap: 6px;
-    }
-
-    .lang-button {
-        width: 44px;
-        height: 44px;
-        font-size: 22px;
     }
 
     /* Theme toggle and help button positioning */

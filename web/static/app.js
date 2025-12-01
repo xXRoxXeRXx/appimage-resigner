@@ -49,6 +49,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Initialize i18n
     if (typeof i18n !== 'undefined') {
         await i18n.init();
+        
+        // Set dropdown to current language
+        const languageSelect = document.getElementById('language-select');
+        if (languageSelect) {
+            languageSelect.value = i18n.getLanguage();
+        }
     }
     
     // Add event listener to theme toggle
@@ -67,34 +73,25 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
     
-    // Add event listeners to language buttons
-    const langButtons = document.querySelectorAll('.lang-button');
-    langButtons.forEach(button => {
-        button.addEventListener('click', () => {
-            const lang = button.getAttribute('data-lang');
+    // Add event listener to language dropdown
+    const languageSelect = document.getElementById('language-select');
+    if (languageSelect) {
+        languageSelect.addEventListener('change', (event) => {
+            const lang = event.target.value;
             if (typeof i18n !== 'undefined') {
                 i18n.setLanguage(lang);
-                
-                // Update active state
-                langButtons.forEach(btn => btn.classList.remove('active'));
-                button.classList.add('active');
-                
                 toast.success(`✓ ${i18n.getLanguageName(lang)}`);
             }
         });
-    });
+    }
     
-    // Listen for language change events
+    // Listen for language change events (update dropdown)
     window.addEventListener('languageChanged', (event) => {
         const lang = event.detail.lang;
-        // Update active button
-        langButtons.forEach(btn => {
-            if (btn.getAttribute('data-lang') === lang) {
-                btn.classList.add('active');
-            } else {
-                btn.classList.remove('active');
-            }
-        });
+        const languageSelect = document.getElementById('language-select');
+        if (languageSelect) {
+            languageSelect.value = lang;
+        }
     });
 });
 

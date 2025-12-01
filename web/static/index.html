@@ -24,16 +24,6 @@
     </div>
 
     <div class="container">
-        <!-- Language Switcher -->
-        <div class="language-switcher" id="language-switcher">
-            <button class="lang-button active" data-lang="de" title="Deutsch">
-                <span class="flag">🇩🇪</span>
-            </button>
-            <button class="lang-button" data-lang="en" title="English">
-                <span class="flag">🇬🇧</span>
-            </button>
-        </div>
-
         <!-- Dark Mode Toggle -->
         <button class="theme-toggle" id="theme-toggle" data-i18n-title="theme.toggleShortcut">
             <span id="theme-icon">🌙</span>
@@ -208,6 +198,15 @@
                 <br>
                 <span style="opacity: 0.7;" data-i18n="footer.madeWith">Made with ❤️ and AI in Berlin 🚀</span>
             </p>
+            
+            <!-- Language Selector Dropdown -->
+            <div class="language-selector">
+                <span class="language-icon">🌍</span>
+                <select id="language-select" class="language-dropdown" aria-label="Select Language">
+                    <option value="de">🇩🇪 Deutsch</option>
+                    <option value="en">🇬🇧 English</option>
+                </select>
+            </div>
         </footer>
     </div>
 
