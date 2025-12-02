@@ -170,7 +170,7 @@
                 <div id="key-import-progress" style="display: none; margin-top: 20px;">
                     <div class="spinner-container">
                         <div class="spinner"></div>
-                        <p class="progress-text">🔐 Importiere Key...</p>
+                        <p class="progress-text" data-i18n="keys.importSection.importing">🔐 Importiere Key...</p>
                     </div>
                 </div>
             </section>
@@ -358,44 +358,55 @@
             const card = document.createElement('div');
             card.className = 'key-card';
             
+            // Use window.t() for all labels
+            const privateKeyLabel = window.t('keys.keyCard.privateKey');
+            const publicKeyLabel = window.t('keys.keyCard.publicKey');
+            const emailLabel = window.t('keys.keyCard.email');
+            const fingerprintLabel = window.t('keys.keyCard.fingerprint');
+            const keyIdLabel = window.t('keys.keyCard.keyId');
+            const typeLabel = window.t('keys.keyCard.type');
+            const createdLabel = window.t('keys.keyCard.created');
+            const expiresLabel = window.t('keys.keyCard.expires');
+            const deleteLabel = window.t('keys.listSection.deleteButton');
+            
             card.innerHTML = `
                 <div class="key-header">
                     <div>
                         <h3 style="margin: 0 0 8px 0;">${key.name || 'Unknown'}</h3>
                         <span class="key-badge ${key.is_secret ? 'badge-secret' : 'badge-public'}">
-                            ${key.is_secret ? '🔐 Private Key' : '🔓 Public Key'}
+                            ${key.is_secret ? '🔐 ' + privateKeyLabel : '🔓 ' + publicKeyLabel}
                         </span>
                     </div>
                 </div>
                 
                 <div class="key-info">
                     ${key.email ? `<div class="key-info-row">
-                        <span class="key-info-label">Email:</span>
+                        <span class="key-info-label">${emailLabel}:</span>
                         <span class="key-info-value">${key.email}</span>
                     </div>` : ''}
                     
                     <div class="key-info-row">
-                        <span class="key-info-label">Fingerprint:</span>
+                        <span class="key-info-label">${fingerprintLabel}:</span>
                         <span class="key-info-value">${key.fingerprint}</span>
                     </div>
                     
                     <div class="key-info-row">
-                        <span class="key-info-label">Key ID:</span>
+                        <span class="key-info-label">${keyIdLabel}:</span>
                         <span class="key-info-value">${key.keyid}</span>
                     </div>
                     
                     <div class="key-info-row">
-                        <span class="key-info-label">Type:</span>
+                        <span class="key-info-label">${typeLabel}:</span>
                         <span class="key-info-value">${key.algo || key.type} ${key.length} bit</span>
                     </div>
                     
                     ${key.created ? `<div class="key-info-row">
-                        <span class="key-info-label">Created:</span>
+                        <span class="key-info-label">${createdLabel}:</span>
                         <span class="key-info-value">${new Date(parseInt(key.created) * 1000).toLocaleDateString()}</span>
                     </div>` : ''}
                     
                     ${key.expires ? `<div class="key-info-row">
-                        <span class="key-info-label">Expires:</span>
+                        <span class="key-info-label">${expiresLabel}:</span>
                         <span class="key-info-value">${key.expires}</span>
                     </div>` : ''}
                 </div>
@@ -403,7 +414,7 @@
                 <div class="key-actions">
                     <button class="btn-danger" onclick="deleteKey('${key.fingerprint}', ${key.is_secret})">
                         <span>🗑️</span>
-                        <span data-i18n="keys.listSection.deleteButton">Löschen</span>
+                        <span>${deleteLabel}</span>
                     </button>
                 </div>
             `;

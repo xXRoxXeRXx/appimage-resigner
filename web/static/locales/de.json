@@ -117,6 +117,7 @@
       "descriptionDetails": "Dieser kann dann beim Signieren ausgewählt werden.",
       "uploadTitle": "Private Key hochladen",
       "dropzone": "Ziehen Sie eine .asc Datei hierher oder klicken Sie zum Auswählen",
+      "importing": "🔐 Importiere Key...",
       "passphrase": "Passphrase (optional)",
       "importButton": "Key importieren"
     },
@@ -126,6 +127,16 @@
       "empty": "Keine Keys vorhanden",
       "emptyDescription": "Importieren Sie einen Key über das Upload-Feld oben",
       "deleteButton": "Löschen"
+    },
+    "keyCard": {
+      "privateKey": "Private Key",
+      "publicKey": "Public Key",
+      "email": "Email",
+      "fingerprint": "Fingerprint",
+      "keyId": "Key ID",
+      "type": "Typ",
+      "created": "Erstellt",
+      "expires": "Läuft ab"
     },
     "messages": {
       "invalidFile": "Bitte wählen Sie eine .asc Datei aus",
