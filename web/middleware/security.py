@@ -56,8 +56,8 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
             # CSP directives
             csp_directives = [
                 "default-src 'self'",
-                "script-src 'sel' 'unsafe-inline'",  # unsafe-inline needed for inline scripts
-                "style-src 'sel' 'unsafe-inline'",   # unsafe-inline needed for inline styles
+                "script-src 'self' 'unsafe-inline'",  # unsafe-inline needed for inline scripts
+                "style-src 'self' 'unsafe-inline'",   # unsafe-inline needed for inline styles
                 "img-src 'self' data:",               # data: for inline images
                 "font-src 'self'",
                 "connect-src 'self'",                 # API calls to same origin
