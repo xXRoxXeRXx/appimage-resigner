@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "🔐 Appimage Re-Signer",
-    "subtitle": "Signieren Sie Ihre Appimages einfach über das Web"
+    "subtitle": "Signieren Sie Ihre Appimages einfach über das Web",
+    "keyManagementLink": "🔑 Key-Verwaltung öffnen →"
   },
   "buttons": {
     "sign": "Appimage signieren",

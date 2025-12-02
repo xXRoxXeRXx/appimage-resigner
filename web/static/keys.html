@@ -207,10 +207,20 @@
                 |
                 <a href="/health" target="_blank">❤️ Health Status</a>
             </p>
+            
+            <!-- Language Selector Dropdown -->
+            <div class="language-selector">
+                <span class="language-icon">🌍</span>
+                <select id="language-select" class="language-dropdown" aria-label="Select Language">
+                    <option value="de">Deutsch</option>
+                    <option value="en">English</option>
+                </select>
+            </div>
         </footer>
     </div>
 
     <script src="/static/toast.js"></script>
+    <script src="/static/i18n.js"></script>
     <script>
         // Theme toggle
         const themeToggle = document.getElementById('theme-toggle');
