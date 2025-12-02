@@ -4,7 +4,6 @@ Tests for FastAPI web application endpoints
 """
 import pytest
 from fastapi.testclient import TestClient
-from pathlib import Path
 import io
 
 

@@ -1,7 +1,6 @@
 """
 Basic Re-Signer Tests
 """
-import pytest
 from pathlib import Path
 from src.resigner import AppImageResigner
 

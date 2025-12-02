@@ -4,7 +4,6 @@ GPG Key Manager
 Manages GPG keys for AppImage signing.
 """
 
-import os
 import sys
 import argparse
 import gnupg  # type: ignore[import]
