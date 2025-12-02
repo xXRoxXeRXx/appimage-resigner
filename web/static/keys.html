@@ -341,11 +341,6 @@
                     keyList.appendChild(keyCard);
                 });
                 
-                // Update i18n for dynamically created elements
-                if (window.updateTranslations) {
-                    window.updateTranslations();
-                }
-                
             } catch (error) {
                 console.error('Failed to load keys:', error);
                 toast.error(window.t('keys.messages.loadError'));
@@ -463,6 +458,11 @@
                     // Handle language change
                     languageSelect.addEventListener('change', (e) => {
                         window.i18n.setLanguage(e.target.value);
+                        // Reload keys to update dynamic content
+                        document.getElementById('key-list').innerHTML = '';
+                        document.getElementById('loading').style.display = 'block';
+                        document.getElementById('empty-state').style.display = 'none';
+                        loadKeys();
                     });
                 }
                 
