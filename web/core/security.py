@@ -18,6 +18,26 @@ def generate_session_id() -> str:
     return secrets.token_urlsafe(32)[:36]
 
 
+def mask_session_id(session_id: str, visible_chars: int = 8) -> str:
+    """Mask a session ID for safe logging.
+
+    Shows only the first N characters followed by ellipsis.
+    This prevents full session IDs from appearing in logs.
+
+    Args:
+        session_id: Full session ID
+        visible_chars: Number of visible characters (default: 8)
+
+    Returns:
+        Masked session ID like "a1b2c3d4..."
+    """
+    if not session_id:
+        return "<empty>"
+    if len(session_id) <= visible_chars:
+        return session_id
+    return f"{session_id[:visible_chars]}..."
+
+
 def generate_api_key(length: int = 32) -> str:
     """Generate a secure API key.
 

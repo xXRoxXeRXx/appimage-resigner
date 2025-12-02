@@ -1,50 +1,17 @@
 #!/usr/bin/env python3
 """
 AppImage Re-Signer
-Removes existing GPG sign        appimage_path_obj = Path(appimage_path)
-
-        if not appimage_path_obj.exists():
-            print(f"Error: AppImage file not found: {appimage_path_obj}")
-            return False
-
-        # Remove separate .asc signature file if it exists
-        asc_file = Path(str(appimage_path_obj) + ".asc")nd adds new ones to AppImage files.
+Removes existing GPG signatures and adds new ones to AppImage files.
 """
 
 import sys
 import os
 import argparse
 import gnupg  # type: ignore[import-untyped]
-import shutil
 from pathlib import Path
 from typing import Optional, Union
 
-
-def find_gpg_binary() -> Optional[str]:
-    """Find GPG binary on the system.
-
-    Returns:
-        Optional[str]: Path to GPG binary if found, None otherwise
-    """
-    # Common GPG locations on Windows
-    gpg_paths = [
-        r"C:\Program Files (x86)\GnuPG\bin\gpg.exe",
-        r"C:\Program Files\GnuPG\bin\gpg.exe",
-        r"C:\Program Files (x86)\Gpg4win\bin\gpg.exe",
-        r"C:\Program Files\Gpg4win\bin\gpg.exe",
-    ]
-
-    # Check if gpg is in PATH
-    gpg_in_path = shutil.which('gpg')
-    if gpg_in_path:
-        return gpg_in_path
-
-    # Check common locations
-    for path in gpg_paths:
-        if os.path.exists(path):
-            return path
-
-    return None
+from src.gpg_utils import create_gpg_instance
 
 
 class AppImageResigner:
@@ -59,12 +26,7 @@ class AppImageResigner:
         Args:
             gpg_home: Path to GPG home directory. Defaults to ~/.gnupg
         """
-        gpg_binary = find_gpg_binary()
-        if gpg_binary:
-            self.gpg = (gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary)
-                        if gpg_home else gnupg.GPG(gpgbinary=gpg_binary))
-        else:
-            self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
+        self.gpg = create_gpg_instance(gpg_home)
 
     def remove_signature(self, appimage_path: Union[str, Path]) -> bool:
         """
@@ -91,8 +53,11 @@ class AppImageResigner:
             try:
                 asc_file.unlink()
                 print(f"Removed signature file: {asc_file}")
-            except Exception as e:
-                print(f"Error removing .asc file: {e}")
+            except PermissionError as e:
+                print(f"Permission denied removing .asc file: {e}")
+                return False
+            except OSError as e:
+                print(f"OS error removing .asc file: {e}")
                 return False
 
         # Check for embedded signature using dd
@@ -196,7 +161,7 @@ class AppImageResigner:
                                 # Encode with normalized line endings
                                 f.write(signature_text.encode('utf-8'))
                             print(f"✓ Signature embedded in: {appimage_path_obj}")
-                        except Exception as e:
+                        except (IOError, OSError) as e:
                             print(f"Warning: Could not embed signature: {e}")
                             # Restore original if embedding failed
                             with open(appimage_path_obj, 'wb') as f:
@@ -215,13 +180,14 @@ class AppImageResigner:
                 # Clean up temp file
                 try:
                     os.unlink(temp_path)
-                except Exception:
+                except OSError:
                     pass
 
-        except Exception as e:
-            print(f"Error during signing: {e}")
-            import traceback
-            traceback.print_exc()
+        except (IOError, OSError) as e:
+            print(f"File operation error during signing: {e}")
+            return False
+        except ValueError as e:
+            print(f"Invalid value during signing: {e}")
             return False
 
     def resign_appimage(
@@ -260,6 +226,8 @@ class AppImageResigner:
 
 def main() -> None:
     """Command-line interface for AppImage re-signer."""
+    import getpass
+
     parser = argparse.ArgumentParser(
         description="Remove and add GPG signatures to AppImage files"
     )
@@ -276,7 +244,13 @@ def main() -> None:
 
     parser.add_argument(
         "-p", "--passphrase",
-        help="Passphrase for the private key (use with caution!)"
+        help="Passphrase for the private key (insecure - prefer interactive prompt)"
+    )
+
+    parser.add_argument(
+        "--ask-passphrase",
+        action="store_true",
+        help="Prompt for passphrase interactively (more secure)"
     )
 
     parser.add_argument(
@@ -298,6 +272,14 @@ def main() -> None:
 
     args = parser.parse_args()
 
+    # Handle passphrase: prefer interactive prompt over CLI argument
+    passphrase = args.passphrase
+    if args.ask_passphrase:
+        passphrase = getpass.getpass("Enter GPG passphrase: ")
+    elif args.passphrase:
+        print("⚠️  Warning: Passing passphrase via CLI is insecure (visible in shell history)")
+        print("   Consider using --ask-passphrase for interactive input")
+
     # Initialize resigner
     resigner = AppImageResigner(gpg_home=args.gpg_home)
 
@@ -305,9 +287,9 @@ def main() -> None:
     if args.remove_only:
         success = resigner.remove_signature(args.appimage)
     elif args.sign_only:
-        success = resigner.sign_appimage(args.appimage, args.key_id, args.passphrase)
+        success = resigner.sign_appimage(args.appimage, args.key_id, passphrase)
     else:
-        success = resigner.resign_appimage(args.appimage, args.key_id, args.passphrase)
+        success = resigner.resign_appimage(args.appimage, args.key_id, passphrase)
 
     sys.exit(0 if success else 1)
 

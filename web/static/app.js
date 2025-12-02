@@ -1,6 +1,33 @@
 // AppImage Re-Signer - Frontend Logic
 
+// =============================================================================
+// Global Error Handler - Catches unhandled errors
+// =============================================================================
+window.onerror = function(message, source, lineno, colno, error) {
+    console.error('Unhandled error:', { message, source, lineno, colno, error });
+    
+    // Show user-friendly error message if toast is available
+    if (typeof toast !== 'undefined' && toast.error) {
+        toast.error('Ein unerwarteter Fehler ist aufgetreten. Bitte laden Sie die Seite neu.');
+    }
+    
+    // Return false to allow default error handling (logging to console)
+    return false;
+};
+
+// Handle unhandled promise rejections
+window.addEventListener('unhandledrejection', function(event) {
+    console.error('Unhandled promise rejection:', event.reason);
+    
+    // Show user-friendly error message if toast is available
+    if (typeof toast !== 'undefined' && toast.error) {
+        toast.error('Ein Netzwerk- oder Serverfehler ist aufgetreten.');
+    }
+});
+
+// =============================================================================
 // Dark Mode Management
+// =============================================================================
 function initDarkMode() {
     const savedTheme = localStorage.getItem('theme');
     const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;

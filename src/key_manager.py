@@ -10,34 +10,8 @@ import argparse
 import gnupg  # type: ignore[import]
 from pathlib import Path
 from typing import Optional, List, Dict, Any
-import shutil
 
-
-def find_gpg_binary() -> Optional[str]:
-    """Find GPG binary on the system.
-
-    Returns:
-        Path to GPG binary if found, None otherwise
-    """
-    # Common GPG locations on Windows
-    gpg_paths = [
-        r"C:\Program Files (x86)\GnuPG\bin\gpg.exe",
-        r"C:\Program Files\GnuPG\bin\gpg.exe",
-        r"C:\Program Files (x86)\Gpg4win\bin\gpg.exe",
-        r"C:\Program Files\Gpg4win\bin\gpg.exe",
-    ]
-
-    # Check if gpg is in PATH
-    gpg_in_path = shutil.which('gpg')
-    if gpg_in_path:
-        return gpg_in_path
-
-    # Check common locations
-    for path in gpg_paths:
-        if os.path.exists(path):
-            return path
-
-    return None
+from src.gpg_utils import create_gpg_instance
 
 
 class GPGKeyManager:
@@ -52,12 +26,7 @@ class GPGKeyManager:
         Args:
             gpg_home: Path to GPG home directory. Defaults to ~/.gnupg
         """
-        gpg_binary = find_gpg_binary()
-        if gpg_binary:
-            self.gpg = (gnupg.GPG(gnupghome=gpg_home, gpgbinary=gpg_binary)
-                        if gpg_home else gnupg.GPG(gpgbinary=gpg_binary))
-        else:
-            self.gpg = gnupg.GPG(gnupghome=gpg_home) if gpg_home else gnupg.GPG()
+        self.gpg = create_gpg_instance(gpg_home)
 
     def generate_key(
         self,

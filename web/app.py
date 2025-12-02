@@ -35,7 +35,7 @@ from web.core.logging_config import (  # noqa: E402
 )
 from web.core.config import settings  # noqa: E402
 from web.core.validation import validate_appimage_file  # noqa: E402
-from web.core.security import get_client_ip, sanitize_filename  # noqa: E402
+from web.core.security import get_client_ip, sanitize_filename, mask_session_id  # noqa: E402
 from web.services.streaming import StreamingUpload  # noqa: E402
 
 # Import security middlewares
@@ -154,7 +154,7 @@ def cleanup_session(session_id: str):
 
         # Remove from sessions
         del sessions[session_id]
-        logger.info(f"Session cleaned up | session_id={session_id} | files_deleted={files_deleted}")
+        logger.info(f"Session cleaned up | session_id={mask_session_id(session_id)} | files_deleted={files_deleted}")
 
 
 def cleanup_old_sessions():
@@ -191,6 +191,15 @@ async def startup_event():
     """Start the background scheduler when the app starts"""
     scheduler.start()
     logger.info("Background scheduler started - sessions will be cleaned up every hour")
+
+    # Security warning for default secret key
+    if settings.secret_key == "dev-secret-key-change-in-production":
+        logger.warning("=" * 60)
+        logger.warning("⚠️  SECURITY WARNING: Using default SECRET_KEY!")
+        logger.warning("   This is insecure for production environments.")
+        logger.warning("   Set SECRET_KEY environment variable to a random 32+ char string.")
+        logger.warning("   Generate one with: python -c \"import secrets; print(secrets.token_hex(32))\"")
+        logger.warning("=" * 60)
 
 
 @app.on_event("shutdown")
@@ -258,7 +267,7 @@ async def create_session():
     session_id = str(uuid.uuid4())
     sessions[session_id] = SigningSession(session_id)
 
-    logger.info(f"Session created | session_id={session_id}")
+    logger.info(f"Session created | session_id={mask_session_id(session_id)}")
 
     return {
         "session_id": session_id,
