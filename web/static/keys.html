@@ -437,12 +437,9 @@
             }
         }
 
-        // Load keys on page load
-        loadKeys();
-
-        // Initialize i18n
+        // Initialize i18n FIRST, then load keys
         document.addEventListener('DOMContentLoaded', async () => {
-            // Initialize i18n system
+            // Initialize i18n system BEFORE anything else
             if (typeof i18n !== 'undefined') {
                 await window.i18n.init();
                 
@@ -462,6 +459,9 @@
                 console.log('🔄 Applying translations to keys.html...');
                 window.i18n.updateUI();
             }
+            
+            // NOW load keys after i18n is ready
+            loadKeys();
         });
     </script>
 </body>
