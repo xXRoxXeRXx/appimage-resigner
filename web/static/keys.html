@@ -439,6 +439,24 @@
 
         // Load keys on page load
         loadKeys();
+
+        // Initialize i18n
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Initialize i18n system
+            await window.i18n.init();
+            
+            // Setup language selector
+            const languageSelect = document.getElementById('language-select');
+            if (languageSelect) {
+                // Set current language in dropdown
+                languageSelect.value = window.i18n.currentLang;
+                
+                // Handle language change
+                languageSelect.addEventListener('change', (e) => {
+                    window.i18n.setLanguage(e.target.value);
+                });
+            }
+        });
     </script>
 </body>
 </html>
