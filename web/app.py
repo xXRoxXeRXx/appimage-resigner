@@ -485,12 +485,12 @@ async def upload_signature(
 
 @app.post("/api/sign")
 async def sign_appimage(
+    background_tasks: BackgroundTasks,
     session_id: str = Form(...),
     key_id: Optional[str] = Form(None),
     key_fingerprint: Optional[str] = Form(None),
     passphrase: Optional[str] = Form(None),
     embed_signature: bool = Form(False),
-    background_tasks: Optional[BackgroundTasks] = None
 ):
     """Sign the uploaded AppImage"""
 
