@@ -6,7 +6,7 @@ Common utilities for GPG operations used across the application.
 
 import os
 import shutil
-from typing import Optional, Any
+from typing import Optional
 
 import gnupg
 
