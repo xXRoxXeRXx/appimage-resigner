@@ -56,7 +56,8 @@ class VerificationService:
                 timestamp=datetime.fromisoformat(result['timestamp']) if result.get('timestamp') else None,
                 trust_level=result.get('trust'),
                 signature_type='embedded' if not signature_path else 'detached',
-                message=result.get('message', 'Verification complete')
+                message=result.get('message', 'Verification complete'),
+                error=result.get('error')
             )
 
         except Exception as e:

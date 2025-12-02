@@ -4,7 +4,7 @@ Security Middleware for AppImage Re-Signer
 Implements various security measures including CSP, CSRF protection, and security headers
 """
 
-from typing import Callable
+from typing import Callable, Dict, Any
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -44,9 +44,9 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         self.enable_csp = enable_csp
         self.csp_report_only = csp_report_only
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:
         """Add security headers to response"""
-        response = await call_next(request)
+        response: Response = await call_next(request)
 
         # Content Security Policy
         if self.enable_csp:
@@ -122,7 +122,7 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, token_header: str = "X-CSRF-Token"):
         super().__init__(app)
         self.token_header = token_header
-        self.tokens = {}  # In production: use Redis or database
+        self.tokens: Dict[str, Dict[str, Any]] = {}  # In production: use Redis or database
 
     def generate_token(self) -> str:
         """Generate a secure CSRF token"""
@@ -132,12 +132,13 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         """Check if path is exempt from CSRF protection"""
         return any(path.startswith(exempt) for exempt in self.EXEMPT_PATHS)
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:
         """Validate CSRF token for protected methods"""
 
         # Skip CSRF check for exempt paths
         if self.is_exempt(request.url.path):
-            return await call_next(request)
+            response: Response = await call_next(request)
+            return response
 
         # Skip CSRF check for safe methods (GET, HEAD, OPTIONS)
         if request.method not in self.PROTECTED_METHODS:
@@ -164,7 +165,8 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
             logger.warning(f"CSRF: Missing session_id for {request.method} {request.url.path}")
             # For now, just log warning - don't block (for backward compatibility)
             # In production, you might want to raise HTTPException
-            return await call_next(request)
+            response = await call_next(request)
+            return response
 
         # Get token from header or form data
         token_from_header = request.headers.get(self.token_header)
@@ -175,19 +177,22 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         if not stored_token_data:
             logger.warning(f"CSRF: No stored token for session {session_id}")
             # For now, just log warning
-            return await call_next(request)
+            response = await call_next(request)
+            return response
 
         # Check if token is expired
         if datetime.utcnow() > stored_token_data["expires"]:
             logger.warning(f"CSRF: Token expired for session {session_id}")
             del self.tokens[session_id]
             # For now, just log warning
-            return await call_next(request)
+            response = await call_next(request)
+            return response
 
         # Validate token
         if token_from_header and secrets.compare_digest(token_from_header, stored_token_data["token"]):
             logger.debug(f"CSRF: Token validated for {request.method} {request.url.path}")
-            return await call_next(request)
+            response = await call_next(request)
+            return response
 
         logger.warning(
             f"CSRF: Invalid token for {request.method} {request.url.path} "
@@ -201,7 +206,8 @@ class CSRFProtectionMiddleware(BaseHTTPMiddleware):
         #     detail="CSRF token validation failed"
         # )
 
-        return await call_next(request)
+        response = await call_next(request)
+        return response
 
 
 class FileSizeValidationMiddleware(BaseHTTPMiddleware):
@@ -214,15 +220,15 @@ class FileSizeValidationMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_size = max_size
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:
         """Check Content-Length header for file uploads"""
 
         # Only check for file upload endpoints
         if request.url.path.startswith("/api/upload"):
-            content_length = request.headers.get("content-length")
+            content_length_str = request.headers.get("content-length")
 
-            if content_length:
-                content_length = int(content_length)
+            if content_length_str:
+                content_length = int(content_length_str)
 
                 if content_length > self.max_size:
                     logger.warning(
@@ -237,7 +243,8 @@ class FileSizeValidationMiddleware(BaseHTTPMiddleware):
                         }
                     )
 
-        return await call_next(request)
+        response: Response = await call_next(request)
+        return response
 
 
 class RateLimitMiddleware(BaseHTTPMiddleware):
@@ -255,7 +262,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self.requests = {}  # In production: use Redis
+        self.requests: Dict[str, Dict[str, Any]] = {}  # In production: use Redis
 
     def get_client_identifier(self, request: Request) -> str:
         """Get client identifier (IP address)"""
@@ -267,7 +274,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         # Fall back to direct client IP
         return request.client.host if request.client else "unknown"
 
-    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+    async def dispatch(self, request: Request, call_next: Callable[[Request], Any]) -> Response:
         """Check rate limit for client"""
 
         client_id = self.get_client_identifier(request)
@@ -314,7 +321,7 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
                 }
             )
 
-        response = await call_next(request)
+        response: Response = await call_next(request)
 
         # Add rate limit headers
         response.headers["X-RateLimit-Limit"] = str(self.max_requests)

@@ -6,7 +6,7 @@ Manages GPG keys for AppImage signing.
 
 import sys
 import argparse
-import gnupg  # type: ignore[import]
+import gnupg
 from pathlib import Path
 from typing import Optional, List, Dict, Any
 
@@ -92,7 +92,7 @@ class GPGKeyManager:
             List of key dictionaries
         """
         keys = self.gpg.list_keys(secret=secret)
-        return keys
+        return list(keys)
 
     def print_keys(self, secret: bool = False) -> None:
         """
@@ -234,6 +234,7 @@ class GPGKeyManager:
             return None
 
         # Try to read as text first (ASCII-armored), fallback to binary
+        key_data: str
         try:
             with open(key_path, 'r', encoding='utf-8') as f:
                 key_data = f.read()
@@ -241,7 +242,7 @@ class GPGKeyManager:
         except UnicodeDecodeError:
             # Binary format - read as bytes and let GPG handle it
             with open(key_path, 'rb') as f:
-                key_data = f.read()
+                key_data = f.read().decode('latin-1')  # Safe decode for binary
             is_text = False
             print("⚠ Key file is in binary format (not ASCII-armored)")
 
@@ -264,7 +265,7 @@ class GPGKeyManager:
             print(f"  Stderr: {result.stderr}")
 
         if result.count > 0 and result.fingerprints:
-            fingerprint = result.fingerprints[0]
+            fingerprint: str = str(result.fingerprints[0])
 
             # Verify the key actually has a secret key
             secret_keys = self.gpg.list_keys(True)  # True = secret keys only
@@ -362,7 +363,7 @@ class GPGKeyManager:
             print(f"  Stderr: {result.stderr}")
 
         if result.count > 0 and result.fingerprints:
-            fingerprint = result.fingerprints[0]
+            fingerprint: str = str(result.fingerprints[0])
 
             # Verify the key actually has a secret key
             secret_keys = self.gpg.list_keys(True)  # True = secret keys only
@@ -580,12 +581,12 @@ def get_key_by_fingerprint(fingerprint: str) -> Optional[Dict[str, Any]]:
     # Search in secret keys first
     for key in all_keys['secret_keys']:
         if key['fingerprint'] == fingerprint:
-            return key
+            return dict(key)
 
     # Then search in public keys
     for key in all_keys['public_keys']:
         if key['fingerprint'] == fingerprint:
-            return key
+            return dict(key)
 
     return None
 

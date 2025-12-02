@@ -7,7 +7,7 @@ Removes existing GPG signatures and adds new ones to AppImage files.
 import sys
 import os
 import argparse
-import gnupg  # type: ignore[import-untyped]
+import gnupg
 from pathlib import Path
 from typing import Optional, Union
 

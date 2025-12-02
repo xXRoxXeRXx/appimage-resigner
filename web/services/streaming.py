@@ -61,7 +61,7 @@ class StreamingUpload:
         if total_size > settings.max_file_size_bytes:
             raise HTTPException(
                 status_code=413,
-                detail=f"File too large. Max size: {settings.max_file_size} MB"
+                detail=f"File too large. Max size: {settings.max_file_size_mb} MB"
             )
 
         # Calculate number of chunks

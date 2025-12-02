@@ -96,7 +96,8 @@ class SigningService:
                 key_id=key_id,
                 embedded=embed_signature,
                 signed_at=datetime.now(),
-                message="AppImage signed successfully"
+                message="AppImage signed successfully",
+                error=None
             )
 
         except Exception as e:

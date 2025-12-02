@@ -6,9 +6,9 @@ Common utilities for GPG operations used across the application.
 
 import os
 import shutil
-from typing import Optional
+from typing import Optional, Any
 
-import gnupg  # type: ignore[import-untyped]
+import gnupg
 
 
 def find_gpg_binary() -> Optional[str]:

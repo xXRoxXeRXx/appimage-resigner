@@ -7,12 +7,12 @@ Verifies GPG signatures of AppImage files.
 import sys
 import os
 import argparse
-import gnupg  # type: ignore[import]
+import gnupg
 import base64
 import struct
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Union
 
 from src.gpg_utils import create_gpg_instance
 
@@ -31,7 +31,7 @@ class AppImageVerifier:
         """
         self.gpg = create_gpg_instance(gpg_home)
 
-    def get_signature_info(self, appimage_path: str) -> Dict[str, Any]:
+    def get_signature_info(self, appimage_path: Union[str, Path]) -> Dict[str, Any]:
         """
         Get information about a signature without verifying it.
         Just checks if a signature exists and extracts basic info + metadata.
@@ -42,17 +42,17 @@ class AppImageVerifier:
         Returns:
             Signature information (has_signature, type, signature_data, metadata)
         """
-        appimage_path = Path(appimage_path)
+        appimage_path_obj = Path(appimage_path)
 
-        if not appimage_path.exists():
+        if not appimage_path_obj.exists():
             return {
                 'has_signature': False,
-                'error': f"AppImage file not found: {appimage_path}"
+                'error': f"AppImage file not found: {appimage_path_obj}"
             }
 
         try:
             # Check for embedded signature
-            with open(appimage_path, 'rb') as f:
+            with open(appimage_path_obj, 'rb') as f:
                 content = f.read()
 
                 if b'-----BEGIN PGP SIGNATURE-----' in content:
@@ -75,7 +75,7 @@ class AppImageVerifier:
                     }
 
             # Check for external .asc file
-            asc_path = Path(str(appimage_path) + ".asc")
+            asc_path = Path(str(appimage_path_obj) + ".asc")
             if asc_path.exists():
                 with open(asc_path, 'r') as f:
                     sig_data = f.read()
@@ -105,7 +105,7 @@ class AppImageVerifier:
                 'error': f"Error reading signature: {str(e)}"
             }
 
-    def extract_embedded_signature(self, appimage_path: str) -> Optional[Dict[str, Any]]:
+    def extract_embedded_signature(self, appimage_path: Union[str, Path]) -> Optional[Dict[str, Any]]:
         """
         Extract embedded signature from AppImage file.
         AppImages can have their signature embedded at the end of the file.
@@ -116,14 +116,14 @@ class AppImageVerifier:
         Returns:
             Signature information or None if no signature found
         """
-        appimage_path = Path(appimage_path)
+        appimage_path_obj = Path(appimage_path)
 
-        if not appimage_path.exists():
+        if not appimage_path_obj.exists():
             return None
 
         try:
             # Read the entire file to look for embedded signature
-            with open(appimage_path, 'rb') as f:
+            with open(appimage_path_obj, 'rb') as f:
                 content = f.read()
 
                 # Look for GPG signature markers
@@ -229,8 +229,8 @@ class AppImageVerifier:
 
     def verify_signature(
         self,
-        appimage_path: str,
-        signature_path: Optional[str] = None
+        appimage_path: Union[str, Path],
+        signature_path: Optional[Union[str, Path]] = None
     ) -> Dict[str, Any]:
         """
         Verify the GPG signature of an AppImage.
@@ -248,26 +248,26 @@ class AppImageVerifier:
                 - timestamp (str): Signature timestamp
                 - fingerprint (str): Key fingerprint
         """
-        appimage_path = Path(appimage_path)
+        appimage_path_obj = Path(appimage_path)
 
-        if not appimage_path.exists():
+        if not appimage_path_obj.exists():
             return {
                 'valid': False,
-                'error': f"AppImage file not found: {appimage_path}"
+                'error': f"AppImage file not found: {appimage_path_obj}"
             }
 
         # If no external signature specified, try embedded signature first
         if signature_path is None:
-            embedded = self.extract_embedded_signature(appimage_path)
+            embedded = self.extract_embedded_signature(appimage_path_obj)
             if embedded and embedded.get('has_signature'):
                 return embedded
 
             # Fall back to external .asc file
-            signature_path = Path(str(appimage_path) + ".asc")
+            signature_path_obj: Path = Path(str(appimage_path_obj) + ".asc")
         else:
-            signature_path = Path(signature_path)
+            signature_path_obj = Path(signature_path)
 
-        if not signature_path.exists():
+        if not signature_path_obj.exists():
             return {
                 'valid': False,
                 'has_signature': False,
@@ -276,8 +276,8 @@ class AppImageVerifier:
 
         try:
             # Verify using file paths (more efficient for large files)
-            with open(signature_path, 'rb') as sig_file:
-                verified = self.gpg.verify_file(sig_file, str(appimage_path))
+            with open(signature_path_obj, 'rb') as sig_file:
+                verified = self.gpg.verify_file(sig_file, str(appimage_path_obj))
 
             if verified.valid:
                 return {
@@ -429,7 +429,7 @@ def get_hash_algorithm_name(hash_id: int) -> str:
     return hash_algorithms.get(hash_id, f'Unknown Hash ({hash_id})')
 
 
-def parse_signature_metadata(signature_data: str) -> dict:
+def parse_signature_metadata(signature_data: str) -> Dict[str, Any]:
     """
     Parse PGP signature to extract metadata without GPG verification.
     Parses the ASCII-armored signature format.
@@ -440,7 +440,7 @@ def parse_signature_metadata(signature_data: str) -> dict:
     Returns:
         dict: Metadata including algorithm, hash, timestamp, key ID, etc.
     """
-    metadata = {
+    metadata: Dict[str, Any] = {
         'raw_available': False,
         'algorithm': None,
         'hash_algorithm': None,

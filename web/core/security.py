@@ -324,16 +324,16 @@ def get_client_ip(request) -> str:
     if forwarded_for:
         # X-Forwarded-For can contain multiple IPs (client, proxy1, proxy2, ...)
         # The first one is the real client IP
-        return forwarded_for.split(",")[0].strip()
+        return str(forwarded_for.split(",")[0].strip())
 
     # Check X-Real-IP header (alternative header used by some proxies)
     real_ip = request.headers.get("x-real-ip")
     if real_ip:
-        return real_ip.strip()
+        return str(real_ip.strip())
 
     # Fall back to direct connection IP
     if request.client:
-        return request.client.host
+        return str(request.client.host)
 
     return "unknown"
 

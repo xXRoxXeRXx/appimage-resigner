@@ -7,7 +7,7 @@ Provides REST API endpoints for uploading, signing, and downloading AppImages
 import uuid
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 from datetime import datetime, timedelta
 
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException, BackgroundTasks, Request
@@ -113,7 +113,7 @@ app.mount("/static", StaticFiles(directory="web/static"), name="static")
 
 
 # Session storage (in production, use Redis or database)
-sessions = {}
+sessions: Dict[str, "SigningSession"] = {}
 
 
 class SigningSession:
@@ -302,7 +302,7 @@ async def upload_appimage(
     session = sessions[session_id]
 
     # Sanitize filename
-    original_filename = file.filename
+    original_filename = file.filename or "unnamed.AppImage"
     safe_filename = sanitize_filename(original_filename)
 
     # Validate file extension first
@@ -490,7 +490,7 @@ async def sign_appimage(
     key_fingerprint: Optional[str] = Form(None),
     passphrase: Optional[str] = Form(None),
     embed_signature: bool = Form(False),
-    background_tasks: BackgroundTasks = None
+    background_tasks: Optional[BackgroundTasks] = None
 ):
     """Sign the uploaded AppImage"""
 
@@ -756,11 +756,15 @@ async def download_zip(session_id: str):
 
         logger.info(f"ZIP download | session_id={session_id} | filename={zip_filename}")
 
+        # Create a background task to delete the zip file after download
+        bg_tasks = BackgroundTasks()
+        bg_tasks.add_task(lambda: zip_path.unlink(missing_ok=True))
+
         return FileResponse(
             zip_path,
             media_type="application/zip",
             filename=zip_filename,
-            background=BackgroundTasks().add_task(lambda: zip_path.unlink(missing_ok=True))
+            background=bg_tasks
         )
 
     except Exception as e:
@@ -817,17 +821,18 @@ async def import_key(key_file: UploadFile = File(...)):
     """
     try:
         # Validate file extension
-        if not key_file.filename.endswith('.asc'):
+        filename = key_file.filename or ""
+        if not filename.endswith('.asc'):
             raise HTTPException(
                 status_code=400,
                 detail="Invalid file format. Only .asc files are allowed."
             )
 
         # Read key content
-        key_content = await key_file.read()
-        key_content = key_content.decode('utf-8')
+        key_content_bytes = await key_file.read()
+        key_content = key_content_bytes.decode('utf-8')
 
-        logger.info(f"Key import attempt | filename={key_file.filename} | size={len(key_content)} bytes")
+        logger.info(f"Key import attempt | filename={filename} | size={len(key_content)} bytes")
 
         # Import key
         from src.key_manager import GPGKeyManager
@@ -835,7 +840,7 @@ async def import_key(key_file: UploadFile = File(...)):
         fingerprint = manager.import_key_from_string(key_content)
 
         if not fingerprint:
-            logger.error(f"Key import failed | filename={key_file.filename} | key_preview={key_content[:100]}")
+            logger.error(f"Key import failed | filename={filename} | key_preview={key_content[:100]}")
             raise HTTPException(
                 status_code=400,
                 detail="Failed to import key. Please check the key format."
@@ -847,9 +852,9 @@ async def import_key(key_file: UploadFile = File(...)):
 
         logger.info(
             "Key imported | "
-            f"filename={key_file.filename} | "
+            f"filename={filename} | "
             f"fingerprint={fingerprint[:16]}... | "
-            f"name={key_data.get('name', 'Unknown')}"
+            f"name={key_data.get('name', 'Unknown') if key_data else 'Unknown'}"
         )
 
         return {

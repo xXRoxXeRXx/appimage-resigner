@@ -4,7 +4,7 @@ Loads configuration from environment variables and .env file.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Union
 from functools import cached_property
 from pydantic import field_validator, model_validator, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -140,16 +140,15 @@ class Settings(BaseSettings):
             )
         return v
 
-    @field_validator('upload_dir', 'signed_dir', 'temp_keys_dir', 'log_file_path')
+    @field_validator('upload_dir', 'signed_dir', 'temp_keys_dir', 'log_file_path', mode='before')
     @classmethod
-    def validate_path(cls, v: Path) -> Path:
+    def validate_path(cls, v: Union[str, Path]) -> Path:
         """Convert string paths to Path objects and validate."""
-        if isinstance(v, str):
-            v = Path(v)
+        path = Path(v) if isinstance(v, str) else v
         # Ensure absolute paths
-        if not v.is_absolute():
-            v = Path.cwd() / v
-        return v
+        if not path.is_absolute():
+            path = Path.cwd() / path
+        return path
 
     @model_validator(mode='after')
     def create_directories_validator(self) -> 'Settings':
