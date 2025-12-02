@@ -443,18 +443,24 @@
         // Initialize i18n
         document.addEventListener('DOMContentLoaded', async () => {
             // Initialize i18n system
-            await window.i18n.init();
-            
-            // Setup language selector
-            const languageSelect = document.getElementById('language-select');
-            if (languageSelect) {
-                // Set current language in dropdown
-                languageSelect.value = window.i18n.currentLang;
+            if (typeof i18n !== 'undefined') {
+                await window.i18n.init();
                 
-                // Handle language change
-                languageSelect.addEventListener('change', (e) => {
-                    window.i18n.setLanguage(e.target.value);
-                });
+                // Setup language selector
+                const languageSelect = document.getElementById('language-select');
+                if (languageSelect) {
+                    // Set current language in dropdown
+                    languageSelect.value = window.i18n.getLanguage();
+                    
+                    // Handle language change
+                    languageSelect.addEventListener('change', (e) => {
+                        window.i18n.setLanguage(e.target.value);
+                    });
+                }
+                
+                // Ensure UI is updated after initialization
+                console.log('🔄 Applying translations to keys.html...');
+                window.i18n.updateUI();
             }
         });
     </script>
