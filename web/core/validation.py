@@ -1,6 +1,6 @@
 """
-File validation utilities for AppImage uploads.
-Ensures uploaded files are valid AppImage files.
+File validation utilities for AppImage and Debian package uploads.
+Ensures uploaded files are valid AppImage or .deb files.
 """
 
 from pathlib import Path
@@ -14,6 +14,12 @@ ELF_MAGIC = b'\x7fELF'
 
 # AppImage Type 2 Magic bytes (at offset 8)
 APPIMAGE_TYPE2_MAGIC = b'AI\x02'
+
+# Debian package (ar archive) magic bytes
+DEB_MAGIC = b'!<arch>\n'
+
+# Supported file extensions
+SUPPORTED_EXTENSIONS = ('.AppImage', '.deb')
 
 
 def validate_elf_header(file_path: Path) -> Tuple[bool, Optional[str]]:
@@ -50,6 +56,33 @@ def validate_elf_header(file_path: Path) -> Tuple[bool, Optional[str]]:
     except Exception as e:
         logger.error(f"ELF validation failed | file={file_path.name} | error={str(e)}")
         return False, f"Could not read file: {str(e)}"
+
+
+def validate_deb_format(file_path: Path) -> Tuple[bool, Optional[str]]:
+    """
+    Validate that the file is a valid Debian package (.deb).
+
+    Debian packages are ar archives that start with the magic bytes '!<arch>\\n'.
+
+    Args:
+        file_path: Path to the file to validate
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    try:
+        with open(file_path, 'rb') as f:
+            magic = f.read(8)
+
+            if magic != DEB_MAGIC:
+                return False, f"Invalid Debian package format. Expected ar archive magic bytes."
+
+            logger.debug(f"Debian package validated | file={file_path.name}")
+            return True, None
+
+    except Exception as e:
+        logger.error(f"Debian package validation failed | file={file_path.name} | error={str(e)}")
+        return False, f"Could not validate Debian package format: {str(e)}"
 
 
 def validate_appimage_format(file_path: Path) -> Tuple[bool, Optional[str]]:
@@ -156,4 +189,53 @@ def validate_appimage_file(
             return is_valid, error
 
     logger.info(f"AppImage file validated successfully | file={file_path.name}")
+    return True, None
+
+
+def validate_package_file(
+    file_path: Path,
+    max_size_bytes: int,
+) -> Tuple[bool, Optional[str]]:
+    """
+    Perform comprehensive validation of an AppImage or Debian package file.
+
+    Automatically selects the appropriate validation strategy based on the
+    file extension.
+
+    Args:
+        file_path: Path to the file to validate
+        max_size_bytes: Maximum allowed file size in bytes
+
+    Returns:
+        Tuple of (is_valid, error_message)
+    """
+    # Check file exists
+    if not file_path.exists():
+        return False, "File does not exist"
+
+    # Check file extension
+    if not any(file_path.name.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
+        return False, f"File must be one of: {', '.join(SUPPORTED_EXTENSIONS)}"
+
+    # Validate file size
+    is_valid, error = validate_file_size(file_path, max_size_bytes)
+    if not is_valid:
+        return is_valid, error
+
+    # Per-format validation
+    if file_path.name.endswith('.AppImage'):
+        is_valid, error = validate_elf_header(file_path)
+        if not is_valid:
+            return is_valid, error
+        is_valid, error = validate_appimage_format(file_path)
+        if not is_valid:
+            return is_valid, error
+        logger.info(f"AppImage file validated successfully | file={file_path.name}")
+
+    elif file_path.name.endswith('.deb'):
+        is_valid, error = validate_deb_format(file_path)
+        if not is_valid:
+            return is_valid, error
+        logger.info(f"Debian package validated successfully | file={file_path.name}")
+
     return True, None

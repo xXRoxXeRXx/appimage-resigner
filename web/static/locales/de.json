@@ -5,17 +5,17 @@
     "keyManagementLink": "🔑 Key-Verwaltung öffnen →"
   },
   "buttons": {
-    "sign": "Appimage signieren",
+    "sign": "Datei signieren",
     "download": "Herunterladen",
     "downloadZip": "Beide als ZIP herunterladen",
-    "downloadAppImage": "Signierte Appimage",
+    "downloadAppImage": "Signierte Datei",
     "downloadSignature": "Signatur (.asc)",
     "copyCommand": "Befehl kopieren",
     "newSigning": "Neue Signierung"
   },
   "step1": {
-    "title": "Appimage hochladen",
-    "dropzone": "Appimage hier ablegen oder klicken zum Auswählen",
+    "title": "Datei hochladen",
+    "dropzone": "AppImage oder .deb Datei hier ablegen oder klicken zum Auswählen",
     "fileSelected": "Datei ausgewählt"
   },
   "step2": {
@@ -36,7 +36,7 @@
   },
   "step3": {
     "title": "Signieren",
-    "progress": "🔐 AppImage wird signiert..."
+    "progress": "🔐 Datei wird signiert..."
   },
   "step4": {
     "title": "Ergebnis",
@@ -58,22 +58,22 @@
   },
   "messages": {
     "sessionError": "Fehler beim Erstellen der Session. Bitte laden Sie die Seite neu.",
-    "invalidFile": "Bitte wählen Sie eine .Appimage Datei aus.",
-    "uploadSuccess": "✓ Appimage erfolgreich hochgeladen!",
+    "invalidFile": "Bitte wählen Sie eine .AppImage oder .deb Datei aus.",
+    "uploadSuccess": "✓ Datei erfolgreich hochgeladen!",
     "uploadError": "Upload fehlgeschlagen: {error}",
     "uploadFailed": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
     "keyUploadSuccess": "✓ GPG-Schlüssel erfolgreich hochgeladen!",
     "keyUploadError": "Key-Upload fehlgeschlagen: {error}",
     "keyUploadFailed": "Key-Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "signingSuccess": "✓ Appimage erfolgreich signiert!",
+    "signingSuccess": "✓ Datei erfolgreich signiert!",
     "signingStarted": "🔐 Signierung gestartet...",
-    "signingNotReady": "Bitte laden Sie zuerst Appimage und GPG-Schlüssel hoch",
+    "signingNotReady": "Bitte laden Sie zuerst eine Datei und einen GPG-Schlüssel hoch",
     "downloadStarted": "⬇️ Download gestartet...",
     "copySuccess": "✓ In Zwischenablage kopiert!",
     "copyFailed": "Kopieren fehlgeschlagen. Bitte manuell markieren und kopieren.",
     "verificationError": "Verifikation fehlgeschlagen: {error}",
     "selectionReset": "Auswahl zurückgesetzt",
-    "appImageReset": "Appimage-Auswahl zurückgesetzt",
+    "appImageReset": "Datei-Auswahl zurückgesetzt",
     "keyReset": "Schlüssel-Auswahl zurückgesetzt"
   },
   "footer": {
@@ -86,7 +86,7 @@
   "keyboard": {
     "shortcuts": "Tastaturkürzel",
     "help": "⌨️ Verfügbare Tastaturkürzel:",
-    "sign": "Appimage signieren",
+    "sign": "Datei signieren",
     "download": "Ergebnis herunterladen",
     "reset": "Neue Signierung starten",
     "theme": "Dark/Light Mode wechseln",

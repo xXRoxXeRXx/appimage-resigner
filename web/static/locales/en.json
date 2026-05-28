@@ -5,17 +5,17 @@
     "keyManagementLink": "🔑 Open Key Management →"
   },
   "buttons": {
-    "sign": "Sign AppImage",
+    "sign": "Sign File",
     "download": "Download",
     "downloadZip": "Download both as ZIP",
-    "downloadAppImage": "Signed AppImage",
+    "downloadAppImage": "Signed File",
     "downloadSignature": "Signature (.asc)",
     "copyCommand": "Copy Command",
     "newSigning": "New Signing"
   },
   "step1": {
-    "title": "Upload AppImage",
-    "dropzone": "Drop AppImage here or click to select",
+    "title": "Upload File",
+    "dropzone": "Drop AppImage or .deb file here or click to select",
     "fileSelected": "File selected"
   },
   "step2": {
@@ -36,7 +36,7 @@
   },
   "step3": {
     "title": "Sign",
-    "progress": "🔐 Signing AppImage..."
+    "progress": "🔐 Signing file..."
   },
   "step4": {
     "title": "Result",
@@ -58,22 +58,22 @@
   },
   "messages": {
     "sessionError": "Error creating session. Please reload the page.",
-    "invalidFile": "Please select an .AppImage file.",
-    "uploadSuccess": "✓ AppImage uploaded successfully!",
+    "invalidFile": "Please select an .AppImage or .deb file.",
+    "uploadSuccess": "✓ File uploaded successfully!",
     "uploadError": "Upload failed: {error}",
     "uploadFailed": "Upload failed. Please try again.",
     "keyUploadSuccess": "✓ GPG key uploaded successfully!",
     "keyUploadError": "Key upload failed: {error}",
     "keyUploadFailed": "Key upload failed. Please try again.",
-    "signingSuccess": "✓ AppImage signed successfully!",
+    "signingSuccess": "✓ File signed successfully!",
     "signingStarted": "🔐 Signing started...",
-    "signingNotReady": "Please upload AppImage and GPG key first",
+    "signingNotReady": "Please upload a file and GPG key first",
     "downloadStarted": "⬇️ Download started...",
     "copySuccess": "✓ Copied to clipboard!",
     "copyFailed": "Copy failed. Please select and copy manually.",
     "verificationError": "Verification failed: {error}",
     "selectionReset": "Selection reset",
-    "appImageReset": "AppImage selection reset",
+    "appImageReset": "File selection reset",
     "keyReset": "Key selection reset"
   },
   "footer": {
@@ -86,7 +86,7 @@
   "keyboard": {
     "shortcuts": "Keyboard Shortcuts",
     "help": "⌨️ Available keyboard shortcuts:",
-    "sign": "Sign AppImage",
+    "sign": "Sign file",
     "download": "Download result",
     "reset": "Start new signing",
     "theme": "Toggle dark/light mode",

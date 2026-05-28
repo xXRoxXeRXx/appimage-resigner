@@ -34,7 +34,7 @@ from web.core.logging_config import (  # noqa: E402
     log_file_operation
 )
 from web.core.config import settings  # noqa: E402
-from web.core.validation import validate_appimage_file  # noqa: E402
+from web.core.validation import validate_appimage_file, validate_package_file, SUPPORTED_EXTENSIONS  # noqa: E402
 from web.core.security import get_client_ip, sanitize_filename, mask_session_id  # noqa: E402
 from web.services.streaming import StreamingUpload  # noqa: E402
 
@@ -306,7 +306,7 @@ async def upload_appimage(
     safe_filename = sanitize_filename(original_filename)
 
     # Validate file extension first
-    if not safe_filename.endswith('.AppImage'):
+    if not any(safe_filename.endswith(ext) for ext in SUPPORTED_EXTENSIONS):
         logger.warning(f"Invalid file upload | session_id={session_id} | filename={safe_filename}")
         log_audit_event(
             logger,
@@ -316,7 +316,10 @@ async def upload_appimage(
             user_agent=user_agent,
             details={"reason": "invalid_extension", "filename": safe_filename}
         )
-        raise HTTPException(status_code=400, detail="File must be an AppImage")
+        raise HTTPException(
+            status_code=400,
+            detail=f"File must be one of: {', '.join(SUPPORTED_EXTENSIONS)}"
+        )
 
     # Save file temporarily
     file_path = UPLOAD_DIR / f"{session_id}_{safe_filename}"
@@ -326,18 +329,16 @@ async def upload_appimage(
             content = await file.read()
             await out_file.write(content)
 
-        # Validate AppImage file (ELF header, size, format)
-        is_valid, error_msg = validate_appimage_file(
+        # Validate uploaded file (size, format)
+        is_valid, error_msg = validate_package_file(
             file_path,
             max_size_bytes=MAX_FILE_SIZE,
-            check_elf=True,
-            check_appimage=True
         )
 
         if not is_valid:
             # Delete invalid file
             file_path.unlink(missing_ok=True)
-            logger.warning(f"Invalid AppImage file | session_id={session_id} | error={error_msg}")
+            logger.warning(f"Invalid package file | session_id={session_id} | error={error_msg}")
             log_audit_event(
                 logger,
                 "upload_rejected",
@@ -346,20 +347,20 @@ async def upload_appimage(
                 user_agent=user_agent,
                 details={"reason": "validation_failed", "error": error_msg, "filename": safe_filename}
             )
-            raise HTTPException(status_code=400, detail=f"Invalid AppImage: {error_msg}")
+            raise HTTPException(status_code=400, detail=f"Invalid file: {error_msg}")
 
         session.appimage_path = file_path
         session.status = "appimage_uploaded"
 
         file_size_mb = len(content) / (1024 * 1024)
         logger.info(
-            f"AppImage uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB"
+            f"Package uploaded | session_id={session_id} | filename={safe_filename} | size={file_size_mb:.2f}MB"
         )
 
         # Audit log: successful upload
         log_audit_event(
             logger,
-            "appimage_uploaded",
+            "package_uploaded",
             session_id=session_id,
             ip_address=client_ip,
             user_agent=user_agent,
@@ -378,28 +379,33 @@ async def upload_appimage(
             success=True
         )
 
-        # Check for existing signature info (without verification)
+        # Check for existing signature info (only for AppImage files)
         signature_info = None
 
-        try:
-            verifier = AppImageVerifier()
-            # Just get signature info, don't verify yet
-            signature_info = verifier.get_signature_info(str(file_path))
-            logger.debug(f"Signature info retrieved | session_id={session_id} | info={signature_info}")
-        except Exception as e:
-            logger.warning(f"Could not get signature info | session_id={session_id} | error={str(e)}")
-            import traceback
-            traceback.print_exc()
-            # Don't fail the upload, just return no signature info
-            signature_info = {
-                'has_signature': False,
-                'error': f"Could not read signature: {str(e)}"
-            }
+        if safe_filename.endswith('.AppImage'):
+            try:
+                verifier = AppImageVerifier()
+                # Just get signature info, don't verify yet
+                signature_info = verifier.get_signature_info(str(file_path))
+                logger.debug(f"Signature info retrieved | session_id={session_id} | info={signature_info}")
+            except Exception as e:
+                logger.warning(f"Could not get signature info | session_id={session_id} | error={str(e)}")
+                import traceback
+                traceback.print_exc()
+                # Don't fail the upload, just return no signature info
+                signature_info = {
+                    'has_signature': False,
+                    'error': f"Could not read signature: {str(e)}"
+                }
+        else:
+            # .deb files don't have embedded signatures
+            signature_info = {'has_signature': False}
 
         return {
             "status": "success",
             "filename": file.filename,
             "size": len(content),
+            "file_type": "deb" if safe_filename.endswith('.deb') else "appimage",
             "signature_info": signature_info
         }
 
@@ -500,7 +506,7 @@ async def sign_appimage(
     session = sessions[session_id]
 
     if not session.appimage_path:
-        raise HTTPException(status_code=400, detail="No AppImage uploaded")
+        raise HTTPException(status_code=400, detail="No file uploaded")
 
     # Security: Warn if passphrase is empty
     if passphrase is not None and len(passphrase.strip()) == 0:
@@ -566,12 +572,17 @@ async def sign_appimage(
         # Copy original to signed directory
         shutil.copy2(session.appimage_path, output_path)
 
+        is_deb = output_path.suffix == '.deb'
+
+        # For .deb files, embedding is not supported
+        effective_embed = embed_signature and not is_deb
+
         # Sign (passphrase will be used but not stored)
         success = resigner.sign_appimage(
             str(output_path),
             key_id=key_id,
             passphrase=passphrase,
-            embed_signature=embed_signature
+            embed_signature=effective_embed
         )
 
         # Security: Overwrite passphrase in memory
@@ -584,16 +595,19 @@ async def sign_appimage(
             session.signature_path = signature_path
             session.status = "signed"
 
-            # Verify signature
-            logger.info(f"Verifying signature | session_id={session_id} | embed={embed_signature}")
-            verifier = AppImageVerifier()
-            verification = verifier.verify_signature(str(output_path))
-            logger.info(f"Verification result | session_id={session_id} | valid={verification.get('valid')}")
+            # Verify signature (AppImage only – .deb has no embedded signature)
+            verification: dict = {"valid": None, "skipped": True}
+            if not is_deb:
+                logger.info(f"Verifying signature | session_id={session_id} | embed={effective_embed}")
+                verifier = AppImageVerifier()
+                verification = verifier.verify_signature(str(output_path))
+                logger.info(f"Verification result | session_id={session_id} | valid={verification.get('valid')}")
             session.verification_result = verification
 
             return {
                 "status": "success",
-                "message": "AppImage signed successfully",
+                "message": "File signed successfully",
+                "file_type": "deb" if is_deb else "appimage",
                 "verification": verification,
                 "download_urls": {
                     "appimage": f"/api/download/appimage/{session_id}",
@@ -668,7 +682,7 @@ async def verify_signature(session_id: str):
 
 @app.get("/api/download/appimage/{session_id}")
 async def download_appimage(session_id: str):
-    """Download the signed AppImage"""
+    """Download the signed file (AppImage or .deb)"""
 
     if session_id not in sessions:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -676,16 +690,22 @@ async def download_appimage(session_id: str):
     session = sessions[session_id]
 
     if not session.signed_path or not session.signed_path.exists():
-        raise HTTPException(status_code=404, detail="Signed AppImage not found")
+        raise HTTPException(status_code=404, detail="Signed file not found")
 
     # Remove UUID prefix from filename
     original_filename = session.signed_path.name
     if original_filename.startswith(f"{session_id}_"):
         original_filename = original_filename[len(session_id) + 1:]
 
+    media_type = (
+        "application/vnd.debian.binary-package"
+        if original_filename.endswith(".deb")
+        else "application/octet-stream"
+    )
+
     return FileResponse(
         session.signed_path,
-        media_type="application/octet-stream",
+        media_type=media_type,
         filename=original_filename
     )
 

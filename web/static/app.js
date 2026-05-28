@@ -305,9 +305,12 @@ appImageDropZone.addEventListener('drop', (e) => {
 async function handleAppImageSelect(e) {
     const file = e.target.files[0];
     if (!file) return;
-    
-    if (!file.name.endsWith('.AppImage')) {
-        toast.warning('Bitte wählen Sie eine .AppImage Datei aus.');
+
+    const isAppImage = file.name.endsWith('.AppImage');
+    const isDeb = file.name.endsWith('.deb');
+
+    if (!isAppImage && !isDeb) {
+        toast.warning('Bitte wählen Sie eine .AppImage oder .deb Datei aus.');
         return;
     }
     
@@ -456,9 +459,15 @@ async function uploadAppImage(file) {
             data = await uploadAppImageWithProgress(file);
         }
         
-        console.log('✓ AppImage uploaded successfully');
+        console.log('✓ File uploaded successfully');
         console.log('Response data:', data);
-        
+
+        // Hide embed-signature option for .deb files (embedding is AppImage-specific)
+        const embedGroup = document.querySelector('#embed-signature')?.closest('.form-group');
+        if (embedGroup) {
+            embedGroup.style.display = data.file_type === 'deb' ? 'none' : '';
+        }
+
         // Show signature info if present (without verification)
         if (data.signature_info && data.signature_info.has_signature) {
             console.log('📝 Signature found:', data.signature_info);
@@ -480,9 +489,9 @@ async function uploadAppImage(file) {
             console.log('❌ No signature found');
             document.getElementById('signature-upload-hint').style.display = 'block';
         }
-        
+
         // Show success toast
-        toast.success('✓ AppImage erfolgreich hochgeladen!');
+        toast.success('✓ Datei erfolgreich hochgeladen!');
         
         enableStep(step2);
         checkReadyToSign();
