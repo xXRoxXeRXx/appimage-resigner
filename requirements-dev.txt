@@ -9,9 +9,9 @@
 # ------------------------------------------------------------------------------
 # Testing
 # ------------------------------------------------------------------------------
-pytest>=7.0.0,<9.0.0                # Testing framework
-pytest-asyncio>=0.21.0,<1.0.0       # Async test support
-pytest-cov>=4.0.0,<6.0.0            # Code coverage reporting
+pytest>=9.0.3,<10.0.0               # Testing framework
+pytest-asyncio>=1.4.0,<2.0.0        # Async test support
+pytest-cov>=7.1.0,<8.0.0            # Code coverage reporting
 pytest-mock>=3.10.0,<4.0.0          # Mocking support
 
 # ------------------------------------------------------------------------------
@@ -20,7 +20,7 @@ pytest-mock>=3.10.0,<4.0.0          # Mocking support
 black>=23.0.0,<25.0.0               # Code formatter
 isort>=5.12.0,<6.0.0                # Import sorter
 flake8>=6.0.0,<8.0.0                # Linter
-mypy>=1.0.0,<2.0.0                  # Static type checker
+mypy>=2.1.0,<3.0.0                  # Static type checker
 pylint>=2.17.0,<4.0.0               # Code analyzer
 
 # ------------------------------------------------------------------------------
@@ -28,7 +28,7 @@ pylint>=2.17.0,<4.0.0               # Code analyzer
 # ------------------------------------------------------------------------------
 ipython>=8.12.0,<9.0.0              # Enhanced Python shell
 ipdb>=0.13.13,<1.0.0                # Debugger
-python-dotenv>=1.0.0,<2.0.0         # .env file support
+python-dotenv>=1.2.2,<2.0.0         # .env file support
 
 # ------------------------------------------------------------------------------
 # Documentation
