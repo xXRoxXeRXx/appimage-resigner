@@ -75,7 +75,7 @@ def validate_deb_format(file_path: Path) -> Tuple[bool, Optional[str]]:
             magic = f.read(8)
 
             if magic != DEB_MAGIC:
-                return False, f"Invalid Debian package format. Expected ar archive magic bytes."
+                return False, "Invalid Debian package format. Expected ar archive magic bytes."
 
             logger.debug(f"Debian package validated | file={file_path.name}")
             return True, None
